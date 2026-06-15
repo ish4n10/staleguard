@@ -44,9 +44,18 @@ def detect_conflict(chunk_a: str, chunk_b: str) -> dict:
     Returns conflict analysis between two text chunks.
     contradiction_score > 0.7 → flag as conflict.
     """
-    scores = model.predict([(chunk_a, chunk_b)])
+    scores = model.predict([(chunk_a, chunk_b)], apply_softmax=True)
     probs = scores[0]  # shape: [3] — contradiction, entailment, neutral
     
+    contradiction = probs[0]
+    entailment = probs[1]
+    neutral = probs[2]
+
+    is_conflict = (
+        contradiction > 0.8
+        and contradiction == max(probs)
+        and contradiction - max(entailment, neutral) > 0.15 
+    )
     label = label_mapping[np.argmax(probs)]
     
     return {
@@ -54,7 +63,7 @@ def detect_conflict(chunk_a: str, chunk_b: str) -> dict:
         "entailment_score":    round(float(probs[1]), 3),
         "neutral_score":       round(float(probs[2]), 3),
         "label":               label,
-        "is_conflict":         float(probs[0]) > 0.7
+        "is_conflict":         is_conflict
     }
 
 def check_chunk_set(chunks: list[dict]) -> list[dict]:
@@ -104,6 +113,14 @@ retrieved_chunks = [
         "id": "redis-v8-auth",
         "text": "Redis 8 authentication requires ACL-based user management. The requirepass directive is deprecated."
     },
+    {
+        "id" : "redis_mem",
+        "text": "Redis uses memory"
+    },
+    {
+        "id": "redis_ram",
+        "text": "redis keeps data in ram"
+    }
 ]
 
 conflicts = check_chunk_set(retrieved_chunks)
