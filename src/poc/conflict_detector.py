@@ -1,10 +1,43 @@
 
-from sentence_transformers import CrossEncoder
+import os
+from pathlib import Path
+
 import numpy as np
+from sentence_transformers import CrossEncoder, SentenceTransformer
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+MODEL_CACHE_ROOT = REPO_ROOT / ".cache" / "huggingface"
+SENTENCE_TRANSFORMERS_CACHE = MODEL_CACHE_ROOT / "sentence_transformers"
+TRANSFORMERS_CACHE = MODEL_CACHE_ROOT / "transformers"
+HUGGINGFACE_HUB_CACHE = MODEL_CACHE_ROOT / "hub"
+
+for cache_dir in (
+    MODEL_CACHE_ROOT,
+    SENTENCE_TRANSFORMERS_CACHE,
+    TRANSFORMERS_CACHE,
+    HUGGINGFACE_HUB_CACHE,
+):
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+os.environ["HF_HOME"] = str(MODEL_CACHE_ROOT)
+os.environ["HUGGINGFACE_HUB_CACHE"] = str(HUGGINGFACE_HUB_CACHE)
+os.environ["TRANSFORMERS_CACHE"] = str(TRANSFORMERS_CACHE)
+os.environ["SENTENCE_TRANSFORMERS_HOME"] = str(SENTENCE_TRANSFORMERS_CACHE)
 
 # loads ~180MB once, cached locally after first download
-model = CrossEncoder('cross-encoder/nli-deberta-v3-base')
+model = CrossEncoder(
+    "cross-encoder/nli-deberta-v3-base",
+    cache_folder=str(SENTENCE_TRANSFORMERS_CACHE),
+)
 label_mapping = ['contradiction', 'entailment', 'neutral']
+
+embedder = SentenceTransformer('all-MiniLM-L6-v2')
+
+def should_check_pair(text_a: str, text_b: str, min_similarity: float = 0.4) -> bool:
+    embs = embedder.encode([text_a, text_b], normalize_embeddings=True)
+    similarity = float(np.dot(embs[0], embs[1]))
+    return similarity >= min_similarity
+
 
 def detect_conflict(chunk_a: str, chunk_b: str) -> dict:
     """
@@ -34,16 +67,17 @@ def check_chunk_set(chunks: list[dict]) -> list[dict]:
     
     for i in range(len(chunks)):
         for j in range(i + 1, len(chunks)):
-            result = detect_conflict(chunks[i]["text"], chunks[j]["text"])
-            
-            if result["is_conflict"]:
-                conflicts.append({
-                    "chunk_a_id":           chunks[i]["id"],
-                    "chunk_b_id":           chunks[j]["id"],
-                    "chunk_a_text":         chunks[i]["text"][:80],
-                    "chunk_b_text":         chunks[j]["text"][:80],
-                    "contradiction_score":  result["contradiction_score"],
-                })
+            if should_check_pair(chunks[i]["text"], chunks[j]["text"]):
+                result = detect_conflict(chunks[i]["text"], chunks[j]["text"])
+                
+                if result["is_conflict"]:
+                    conflicts.append({
+                        "chunk_a_id":           chunks[i]["id"],
+                        "chunk_b_id":           chunks[j]["id"],
+                        "chunk_a_text":         chunks[i]["text"][:80],
+                        "chunk_b_text":         chunks[j]["text"][:80],
+                        "contradiction_score":  result["contradiction_score"],
+                    })
     
     return conflicts
 
