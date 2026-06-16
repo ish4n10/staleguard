@@ -1,2 +1,4 @@
 .cache/
 venv
+poc3_chroma
+__pycache__
