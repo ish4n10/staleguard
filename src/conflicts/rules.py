@@ -25,6 +25,7 @@ def normalize_text(text) -> str:
     return text.lower().replace("no longer", "no_longer")
 
 
+
 def content_terms(text: str) -> set[str]:
     tokens = TOKEN_PATTERN.findall(normalize_text(text))
     return {
@@ -49,3 +50,13 @@ def extract_version(text, chunk_id = "") -> str[str]:
             versions.add(v)
 
     return versions
+
+
+def has_negative(text) -> bool:
+    return bool(content_terms(text) & NEGATION_TERMS)
+
+def has_positive(text) -> bool:
+    return bool(content_terms(text) & ACTIVE_TERMS)
+
+
+
