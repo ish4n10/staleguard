@@ -59,4 +59,9 @@ def has_positive(text) -> bool:
     return bool(content_terms(text) & ACTIVE_TERMS)
 
 
+def detect_rules_conflicts(chunks: list[dict]) -> list[dict]:
 
+    conflicts = [] 
+
+    for i in range(len(chunks)):
+        
