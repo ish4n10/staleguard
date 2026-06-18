@@ -1,3 +1,9 @@
+from .types import AuditResult
+from scorers.freshness import score_chunk_freshness
+from alternatives.finder import find_fresh_alternatives
+from conflicts.rules import detect_rule_conflicts
+
+
 def build_provenance_card(
     verdict: str,
     confidence: float,
