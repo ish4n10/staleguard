@@ -4,8 +4,8 @@ from dataclasses import dataclass
 class AuditResult:
     verdict: str
     confidence: float
-    stable_chunks: list
+    stale_chunks: list
     conflicts: list
-    fresh_alts: list
+    fresh_alternatives: list
     provenance: dict
 
