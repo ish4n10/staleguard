@@ -21,7 +21,7 @@ STOPWORDS = {
     "their", "this", "to", "via", "with",
 }
 
-def normalize_text(text) -> str:
+def normalize_text(text: str) -> str:
     return text.lower().replace("no longer", "no_longer")
 
 
@@ -34,11 +34,11 @@ def content_terms(text: str) -> set[str]:
         if len(token) >= 3 and token not in STOPWORDS and not token.isdigit()
     }
 
-def shared_content_terms(text_a, text_b) -> set[str]:
+def shared_content_terms(text_a: str, text_b: str) -> set[str]:
     return content_terms(text_a) & content_terms(text_b)
 
 
-def extract_version(text, chunk_id = "") -> str[str]:
+def extract_versions(text: str, chunk_id: str = "") -> set[str]:
     haystack = f"{text} {chunk_id}"
     versions = set()
 
@@ -52,14 +52,14 @@ def extract_version(text, chunk_id = "") -> str[str]:
     return versions
 
 
-def has_negative(text) -> bool:
+def has_negative(text: str) -> bool:
     return bool(content_terms(text) & NEGATION_TERMS)
 
-def has_positive(text) -> bool:
+def has_positive(text: str) -> bool:
     return bool(content_terms(text) & ACTIVE_TERMS)
 
 
-def detect_rules_conflicts(chunks: list[dict]) -> list[dict]:
+def detect_rule_conflicts(chunks: list[dict]) -> list[dict]:
 
     conflicts = [] 
 
@@ -72,11 +72,11 @@ def detect_rules_conflicts(chunks: list[dict]) -> list[dict]:
                 continue
             if chunk_a.get('topic') != chunk_b.get('topic'):
                 continue
-            if chunk_a.get('version') != chunk_b.get('version'):
+            if chunk_a.get('version') == chunk_b.get('version'):
                 continue
 
-            version_a = extract_version(chunk_a.get('text'), chunk_a.get('id', ''))
-            version_b = extract_version(chunk_b.get('text'), chunk_b.get('id', ''))
+            version_a = extract_versions(chunk_a.get('text', ''), chunk_a.get('id', ''))
+            version_b = extract_versions(chunk_b.get('text', ''), chunk_b.get('id', ''))
 
             if not version_a or not version_b:
                 continue
@@ -96,8 +96,8 @@ def detect_rules_conflicts(chunks: list[dict]) -> list[dict]:
 
             if (a_negative and b_positive) or (a_positive and b_negative):
                 conflicts.append({
-                    'chunk_a': chunk_a['text'],
-                    'chunk_b': chunk_b['text'],
+                    'chunk_a': chunk_a['id'],
+                    'chunk_b': chunk_b['id'],
 
                     'type': "VERSION_CONFLICT",
                     'confidence': 0.75,
