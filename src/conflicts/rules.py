@@ -18,7 +18,7 @@ TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
 STOPWORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
     "has", "in", "is", "it", "its", "of", "on", "or", "that", "the",
-    "their", "this", "to", "uses", "using", "via", "with",
+    "their", "this", "to", "via", "with",
 }
 
 def normalize_text(text) -> str:
