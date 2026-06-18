@@ -1,0 +1,27 @@
+[
+  {
+    "id": "redis_6_cluster_001",
+    "text": "Redis 6 uses requirepass configuration for cluster authentication.",
+    "topic": "cluster_configuration",
+    "product": "redis",
+    "version": "6.2",
+    "date_ts": 1640995200,
+    "source": "redis-6.2-cluster.md",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "8.0"
+    }
+  },
+  {
+    "id": "redis_8_cluster_001",
+    "text": "Redis 8 deprecated requirepass and removed it from the recommended cluster authentication setup.",
+    "topic": "cluster_configuration",
+    "product": "redis",
+    "version": "8.0",
+    "date_ts": 1735689600,
+    "source": "redis-8.0-cluster.md",
+    "metadata": {
+      "status": "current"
+    }
+  }
+]
