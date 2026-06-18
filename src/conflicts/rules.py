@@ -64,4 +64,46 @@ def detect_rules_conflicts(chunks: list[dict]) -> list[dict]:
     conflicts = [] 
 
     for i in range(len(chunks)):
+        for j in range(i + 1, len(chunks)):
+            chunk_a = chunks[i]
+            chunk_b = chunks[j]
+
+            if chunk_a.get('product') != chunk_b.get('product'):
+                continue
+            if chunk_a.get('topic') != chunk_b.get('topic'):
+                continue
+            if chunk_a.get('version') != chunk_b.get('version'):
+                continue
+
+            version_a = extract_version(chunk_a.get('text'), chunk_a.get('id', ''))
+            version_b = extract_version(chunk_b.get('text'), chunk_b.get('id', ''))
+
+            if not version_a or not version_b:
+                continue
+        
+            if version_a == version_b: 
+                continue
+
+            shared_terms = shared_content_terms(chunk_a.get('text', ''), chunk_b.get('text', ''))
+
+            if len(shared_terms) < 1:
+                continue
+
+            a_negative = has_negative(chunk_a['text'])
+            a_positive = has_positive(chunk_a['text'])
+            b_negative = has_negative(chunk_b['text'])
+            b_positive = has_positive(chunk_b['text'])
+
+            if (a_negative and b_positive) or (a_positive and b_negative):
+                conflicts.append({
+                    'chunk_a': chunk_a['text'],
+                    'chunk_b': chunk_b['text'],
+
+                    'type': "VERSION_CONFLICT",
+                    'confidence': 0.75,
+                    "reason": "Chunks describe the same topic across versions",
+                    "shared_terms" : sorted(shared_terms)
+                })
+
+    return conflicts
         
