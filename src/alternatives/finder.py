@@ -1,4 +1,4 @@
-from scorers.freshness import find_superseding_chunk, score_chunk_freshness
+from ..scorers.freshness import find_superseding_chunk, score_chunk_freshness
 
 
 def find_fresh_alternatives(
@@ -11,14 +11,8 @@ def find_fresh_alternatives(
         return []
 
     alternatives = []
-
     for chunk in retrieved_chunks:
-        freshness = score_chunk_freshness(
-            chunk=chunk,
-            query=query,
-            corpus=corpus,
-            now_ts=now_ts,
-        )
+        freshness = score_chunk_freshness(chunk, query, corpus, now_ts)
         if freshness["verdict"] != "STALE":
             continue
 
@@ -36,5 +30,4 @@ def find_fresh_alternatives(
                 ),
             }
         )
-
     return alternatives

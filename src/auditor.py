@@ -1,16 +1,7 @@
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
-
-from scorers.freshness import score_chunk_freshness
-from alternatives.finder import find_fresh_alternatives
-from conflicts.rules import detect_rule_conflicts
-
-_TYPES_PATH = Path(__file__).with_name("types.py")
-_TYPES_SPEC = spec_from_file_location("staleguard_local_types", _TYPES_PATH)
-_TYPES_MODULE = module_from_spec(_TYPES_SPEC)
-assert _TYPES_SPEC.loader is not None
-_TYPES_SPEC.loader.exec_module(_TYPES_MODULE)
-AuditResult = _TYPES_MODULE.AuditResult
+from .alternatives.finder import find_fresh_alternatives
+from .conflicts.rules import detect_rule_conflicts
+from .scorers.freshness import score_chunk_freshness
+from .types import AuditResult
 
 
 def build_provenance_card(
@@ -21,15 +12,7 @@ def build_provenance_card(
     fresh_alternatives: list[dict],
     conflicts: list[dict],
 ) -> dict:
-    if conflicts:
-        recommendation = "Block generation or ask user to resolve conflicting chunks."
-    elif stale_chunks and fresh_alternatives:
-        recommendation = "Regenerate answer using fresher chunks."
-    elif stale_chunks:
-        recommendation = "Warn user that retrieved context may be outdated."
-    else:
-        recommendation = "Proceed with retrieved chunks."
-
+    recommendation = _recommendation(stale_chunks, fresh_alternatives, conflicts)
     return {
         "verdict": verdict,
         "confidence": confidence,
@@ -49,47 +32,23 @@ def audit(
     retrieved_chunks: list[dict],
     corpus: list[dict] | None = None,
 ) -> AuditResult:
-    stale_chunks = [] 
-    for chunk in retrieved_chunks: 
-        result = score_chunk_freshness(chunk, query, corpus)
-        if result['verdict'] in ("STALE", "AGING"):
-            stale_chunks.append(result)
-
-        
-    fresh_alternatives = find_fresh_alternatives(
-        retrieved_chunks, corpus, query
-    )
-
+    stale_chunks = [
+        result
+        for result in (score_chunk_freshness(chunk, query, corpus) for chunk in retrieved_chunks)
+        if result["verdict"] in {"STALE", "AGING"}
+    ]
+    fresh_alternatives = find_fresh_alternatives(retrieved_chunks, corpus, query)
     conflicts = detect_rule_conflicts(retrieved_chunks)
 
-
-    if conflicts and stale_chunks: 
-        verdict = 'MIXED'
-        confidence = 0.75
-    elif conflicts:
-        verdict = "CONFLICTED"
-        confidence = 0.8
-    elif stale_chunks:
-        verdict = 'STALE'
-        confidence = 0.7
-    elif retrieved_chunks:
-        verdict = "FRESH"
-        confidence = 0.85
-    else: 
-        verdict = "UNKNOWN"
-        confidence = 0.0
-
-    provenance = {
-        "verdict": verdict,
-        "confidence": confidence,
-        "total_chunks_checked": len(retrieved_chunks),
-        "stale_count": len(stale_chunks),
-        "conflict_count": len(conflicts),
-        "used_chunks": [chunk["id"] for chunk in retrieved_chunks],
-        "stale_chunks": stale_chunks,
-        "fresh_alternatives": fresh_alternatives,
-        "conflicts": conflicts,
-    }
+    verdict, confidence = _verdict_and_confidence(retrieved_chunks, stale_chunks, conflicts)
+    provenance = build_provenance_card(
+        verdict=verdict,
+        confidence=confidence,
+        retrieved_chunks=retrieved_chunks,
+        stale_chunks=stale_chunks,
+        fresh_alternatives=fresh_alternatives,
+        conflicts=conflicts,
+    )
 
     return AuditResult(
         verdict=verdict,
@@ -99,3 +58,33 @@ def audit(
         fresh_alternatives=fresh_alternatives,
         provenance=provenance,
     )
+
+
+def _recommendation(
+    stale_chunks: list[dict],
+    fresh_alternatives: list[dict],
+    conflicts: list[dict],
+) -> str:
+    if conflicts:
+        return "Block generation or ask user to resolve conflicting chunks."
+    if stale_chunks and fresh_alternatives:
+        return "Regenerate answer using fresher chunks."
+    if stale_chunks:
+        return "Warn user that retrieved context may be outdated."
+    return "Proceed with retrieved chunks."
+
+
+def _verdict_and_confidence(
+    retrieved_chunks: list[dict],
+    stale_chunks: list[dict],
+    conflicts: list[dict],
+) -> tuple[str, float]:
+    if conflicts and stale_chunks:
+        return "MIXED", 0.75
+    if conflicts:
+        return "CONFLICTED", 0.8
+    if stale_chunks:
+        return "STALE", 0.7
+    if retrieved_chunks:
+        return "FRESH", 0.85
+    return "UNKNOWN", 0.0

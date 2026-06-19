@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class AuditResult:
     verdict: str
@@ -8,4 +9,3 @@ class AuditResult:
     conflicts: list
     fresh_alternatives: list
     provenance: dict
-

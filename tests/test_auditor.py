@@ -1,16 +1,10 @@
 import sys
 import unittest
-from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
-SRC_DIR = Path(__file__).resolve().parents[1] / "src"
-sys.path.insert(0, str(SRC_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-auditor_spec = spec_from_file_location("staleguard_auditor", SRC_DIR / "auditor.py")
-auditor_module = module_from_spec(auditor_spec)
-assert auditor_spec.loader is not None
-auditor_spec.loader.exec_module(auditor_module)
-audit = auditor_module.audit
+from src import audit
 
 
 class AuditorTests(unittest.TestCase):

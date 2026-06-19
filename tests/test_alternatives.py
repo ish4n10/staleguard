@@ -2,9 +2,9 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from alternatives.finder import find_fresh_alternatives
+from src.alternatives.finder import find_fresh_alternatives
 
 
 class FreshAlternativeFinderTests(unittest.TestCase):
