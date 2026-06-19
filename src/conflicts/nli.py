@@ -29,7 +29,6 @@ MIN_CONTRADICTION_MARGIN = 0.15
 _model = None
 _embedder = None
 
-
 def get_nli_model():
     global _model
     if _model is None:

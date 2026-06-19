@@ -1,4 +1,4 @@
 from .auditor import audit
-from .types import AuditResult
+from .audit_types import AuditResult
 
 __all__ = ["audit", "AuditResult"]

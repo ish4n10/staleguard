@@ -1,7 +1,7 @@
 from .alternatives.finder import find_fresh_alternatives
+from .audit_types import AuditResult
 from .conflicts.rules import detect_rule_conflicts
 from .scorers.freshness import score_chunk_freshness
-from .types import AuditResult
 from .conflicts.nli import score_chunk_pair
 from itertools import combinations
 
