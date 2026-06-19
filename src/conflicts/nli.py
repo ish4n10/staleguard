@@ -73,6 +73,7 @@ def score_chunk_pair(chunk_a: dict[str, Any], chunk_b: dict[str, Any]) -> dict[s
         return {
             "chunk_a": chunk_a["id"],
             "chunk_b": chunk_b["id"],
+            "source": "nli",
             "type": "NLI_CONFLICT",
             "confidence": 0.0,
             "label": "skipped",
@@ -93,6 +94,7 @@ def score_chunk_pair(chunk_a: dict[str, Any], chunk_b: dict[str, Any]) -> dict[s
     return {
         "chunk_a": chunk_a["id"],
         "chunk_b": chunk_b["id"],
+        "source": "nli",
         "type": "NLI_CONFLICT",
         "confidence": round(contradiction, 3),
         "label": label,

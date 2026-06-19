@@ -1,7 +1,7 @@
 [
   {
     "id": "redis_6_cluster_001",
-    "text": "Redis 6 uses requirepass configuration for cluster authentication.",
+    "text": "Redis 6.2 cluster setup uses the requirepass directive together with masterauth so that every node in the cluster shares a single password-based authentication flow. Older guides recommend that operators use requirepass in redis.conf on each node before creating the cluster.",
     "topic": "cluster_configuration",
     "product": "redis",
     "version": "6.2",
@@ -14,12 +14,24 @@
   },
   {
     "id": "redis_8_cluster_001",
-    "text": "Redis 8 deprecated requirepass and removed it from the recommended cluster authentication setup.",
+    "text": "Redis 8 cluster deployment guidance deprecated requirepass-based cluster authentication and removed it from the recommended setup path. Current cluster configuration expects ACL-managed users, explicit user permissions, and node-to-node authentication that follows the ACL configuration instead of a shared requirepass value.",
     "topic": "cluster_configuration",
     "product": "redis",
     "version": "8.0",
     "date_ts": 1735689600,
     "source": "redis-8.0-cluster.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "redis_8_memory_001",
+    "text": "Redis 8 keeps hot data in RAM and continues to rely on memory-efficient data structures for low-latency access. Capacity planning guidance focuses on maxmemory sizing, eviction policy choice, and operating headroom for replication and persistence overhead.",
+    "topic": "memory_management",
+    "product": "redis",
+    "version": "8.0",
+    "date_ts": 1735689600,
+    "source": "redis-8.0-memory.md",
     "metadata": {
       "status": "current"
     }

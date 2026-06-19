@@ -36,7 +36,7 @@ def collect_nli_conflicts(chunks: list[dict]) -> list[dict]:
             continue
         if chunk_a.get('topic') != chunk_b.get('topic'):
             continue
-        if chunk_a.get('version') != chunk_b.get('version'):
+        if chunk_a.get('version') == chunk_b.get('version'):
             continue
 
         result = score_chunk_pair(chunk_a, chunk_b)
@@ -50,7 +50,7 @@ def merge_conflicts(rule_conflicts, nli_conflicts) -> list[dict]:
     seen = set() 
 
     for conflict in rule_conflicts + nli_conflicts:
-        pair = tuple(sorted(conflict['chunk_a'], conflict['chunk_b']))
+        pair = tuple(sorted((conflict['chunk_a'], conflict['chunk_b'])))
         if pair in seen:
             continue
         seen.add(pair)
@@ -63,7 +63,7 @@ def audit(
     query: str,
     retrieved_chunks: list[dict],
     corpus: list[dict] | None = None,
-    use_nli: bool = True
+    use_nli: bool = False
 ) -> AuditResult:
     stale_chunks = [
         result

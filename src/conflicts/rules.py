@@ -115,15 +115,16 @@ def detect_rule_conflicts(chunks: list[dict]) -> list[dict]:
         b_positive = has_positive(chunk_b["text"])
 
         if (a_negative and b_positive) or (a_positive and b_negative):
-            conflicts.append(
-                {
-                    "chunk_a": chunk_a["id"],
-                    "chunk_b": chunk_b["id"],
-                    "type": "VERSION_CONFLICT",
-                    "confidence": 0.75,
-                    "reason": "Chunks describe the same topic across versions",
-                    "shared_terms": sorted(shared_terms),
-                }
+                conflicts.append(
+                    {
+                        "chunk_a": chunk_a["id"],
+                        "chunk_b": chunk_b["id"],
+                        "source": "rules",
+                        "type": "VERSION_CONFLICT",
+                        "confidence": 0.75,
+                        "reason": "Chunks describe the same topic across versions",
+                        "shared_terms": sorted(shared_terms),
+                    }
             )
 
     return conflicts

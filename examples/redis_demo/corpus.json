@@ -1,7 +1,7 @@
 [
   {
     "id": "redis_6_cluster_001",
-    "text": "Redis 6 uses requirepass configuration for cluster authentication.",
+    "text": "Redis 6.2 cluster setup uses the requirepass directive together with masterauth so that every node in the cluster shares a single password-based authentication flow. Older guides recommend that operators use requirepass in redis.conf on each node before creating the cluster.",
     "topic": "cluster_configuration",
     "product": "redis",
     "version": "6.2",
@@ -13,8 +13,20 @@
     }
   },
   {
+    "id": "redis_7_cluster_001",
+    "text": "Redis 7 cluster documentation began steering users toward ACL-aware authentication. Legacy requirepass examples still existed for compatibility, but the recommended direction was to create named users and align cluster node credentials with ACL rules instead of relying on a single global password.",
+    "topic": "cluster_configuration",
+    "product": "redis",
+    "version": "7.0",
+    "date_ts": 1672531200,
+    "source": "redis-7.0-cluster.md",
+    "metadata": {
+      "status": "aging"
+    }
+  },
+  {
     "id": "redis_8_cluster_001",
-    "text": "Redis 8 deprecated requirepass and removed it from the recommended cluster authentication setup.",
+    "text": "Redis 8 cluster deployment guidance deprecated requirepass-based cluster authentication and removed it from the recommended setup path. Current cluster configuration expects ACL-managed users, explicit user permissions, and node-to-node authentication that follows the ACL configuration instead of a shared requirepass value.",
     "topic": "cluster_configuration",
     "product": "redis",
     "version": "8.0",
@@ -25,9 +37,33 @@
     }
   },
   {
+    "id": "redis_6_persistence_001",
+    "text": "Redis 6 persistence documentation recommends combining RDB snapshots with appendonly yes when you need both quick restarts and stronger durability guarantees. The guidance focuses on balancing snapshot intervals with append-only rewrite cost.",
+    "topic": "persistence",
+    "product": "redis",
+    "version": "6.2",
+    "date_ts": 1643673600,
+    "source": "redis-6.2-persistence.md",
+    "metadata": {
+      "status": "aging"
+    }
+  },
+  {
+    "id": "redis_8_persistence_001",
+    "text": "Redis 8 persistence guidance still supports RDB snapshots and the append-only file, but newer operational recommendations emphasize validating rewrite pressure, disk throughput, and recovery objectives during deployment. The persistence model itself remains available and supported.",
+    "topic": "persistence",
+    "product": "redis",
+    "version": "8.0",
+    "date_ts": 1735689600,
+    "source": "redis-8.0-persistence.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
     "id": "redis_8_memory_001",
-    "text": "Redis 8 supports RAM-based storage for fast access.",
-    "topic": "memory",
+    "text": "Redis 8 keeps hot data in RAM and continues to rely on memory-efficient data structures for low-latency access. Capacity planning guidance focuses on maxmemory sizing, eviction policy choice, and operating headroom for replication and persistence overhead.",
+    "topic": "memory_management",
     "product": "redis",
     "version": "8.0",
     "date_ts": 1735689600,
