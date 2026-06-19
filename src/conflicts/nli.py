@@ -20,11 +20,14 @@ os.environ["TRANSFORMERS_CACHE"] = str(TF_CACHE)
 os.environ["SENTENCE_TRANSFORMERS_HOME"] = str(ST_CACHE)
 
 MODEL_NAME = "cross-encoder/nli-deberta-v3-base"
+EMBED_MODEL_NAME = "all-MiniLM-L6-v2"
 LABELS = ["contradiction", "entailment", "neutral"]
+MIN_SIMILARITY = 0.40
 MIN_CONTRADICTION_SCORE = 0.8
 MIN_CONTRADICTION_MARGIN = 0.15
 
 _model = None
+_embedder = None
 
 
 def get_nli_model():
@@ -34,6 +37,21 @@ def get_nli_model():
 
         _model = CrossEncoder(MODEL_NAME, cache_folder=str(ST_CACHE))
     return _model
+
+
+def get_embedder():
+    global _embedder
+    if _embedder is None:
+        from sentence_transformers import SentenceTransformer
+
+        _embedder = SentenceTransformer(EMBED_MODEL_NAME, cache_folder=str(ST_CACHE))
+    return _embedder
+
+
+def pair_similarity(text_a: str, text_b: str) -> float:
+    embedder = get_embedder()
+    embeddings = embedder.encode([text_a, text_b], normalize_embeddings=True)
+    return float(np.dot(embeddings[0], embeddings[1]))
 
 
 def predict_probabilities(text_a: str, text_b: str) -> np.ndarray:
@@ -50,6 +68,20 @@ def predict_probabilities(text_a: str, text_b: str) -> np.ndarray:
 
 
 def score_chunk_pair(chunk_a: dict[str, Any], chunk_b: dict[str, Any]) -> dict[str, Any]:
+    similarity = pair_similarity(chunk_a["text"], chunk_b["text"])
+    if similarity < MIN_SIMILARITY:
+        return {
+            "chunk_a": chunk_a["id"],
+            "chunk_b": chunk_b["id"],
+            "type": "NLI_CONFLICT",
+            "confidence": 0.0,
+            "label": "skipped",
+            "similarity": round(similarity, 3),
+            "scores": None,
+            "is_conflict": False,
+            "reason": f"similarity below threshold ({MIN_SIMILARITY:.2f})",
+        }
+
     probs = predict_probabilities(chunk_a["text"], chunk_b["text"])
 
     contradiction = float(probs[0])
@@ -64,6 +96,7 @@ def score_chunk_pair(chunk_a: dict[str, Any], chunk_b: dict[str, Any]) -> dict[s
         "type": "NLI_CONFLICT",
         "confidence": round(contradiction, 3),
         "label": label,
+        "similarity": round(similarity, 3),
         "scores": {
             "contradiction": round(contradiction, 3),
             "entailment": round(entailment, 3),
