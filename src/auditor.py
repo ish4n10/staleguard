@@ -2,6 +2,8 @@ from .alternatives.finder import find_fresh_alternatives
 from .conflicts.rules import detect_rule_conflicts
 from .scorers.freshness import score_chunk_freshness
 from .types import AuditResult
+from .conflicts.nli import score_chunk_pair
+from itertools import combinations
 
 
 def build_provenance_card(
@@ -26,11 +28,42 @@ def build_provenance_card(
         "recommendation": recommendation,
     }
 
+def collect_nli_conflicts(chunks: list[dict]) -> list[dict]:
+    conflicts = [] 
+    
+    for chunk_a, chunk_b in combinations(chunks, 2):
+        if chunk_a.get('product') != chunk_b.get('product'):
+            continue
+        if chunk_a.get('topic') != chunk_b.get('topic'):
+            continue
+        if chunk_a.get('version') != chunk_b.get('version'):
+            continue
+
+        result = score_chunk_pair(chunk_a, chunk_b)
+        if result['is_conflict']:
+            conflicts.append(result)
+
+    return conflicts
+        
+def merge_conflicts(rule_conflicts, nli_conflicts) -> list[dict]:
+    merged = [] 
+    seen = set() 
+
+    for conflict in rule_conflicts + nli_conflicts:
+        pair = tuple(sorted(conflict['chunk_a'], conflict['chunk_b']))
+        if pair in seen:
+            continue
+        seen.add(pair)
+        merged.append(conflict)
+
+    return merged 
+
 
 def audit(
     query: str,
     retrieved_chunks: list[dict],
     corpus: list[dict] | None = None,
+    use_nli: bool = True
 ) -> AuditResult:
     stale_chunks = [
         result
@@ -38,8 +71,16 @@ def audit(
         if result["verdict"] in {"STALE", "AGING"}
     ]
     fresh_alternatives = find_fresh_alternatives(retrieved_chunks, corpus, query)
-    conflicts = detect_rule_conflicts(retrieved_chunks)
+    rule_conflicts = detect_rule_conflicts(retrieved_chunks)
 
+
+    if use_nli:
+        nli_conflicts = collect_nli_conflicts(retrieved_chunks)
+        conflicts = merge_conflicts(rule_conflicts, nli_conflicts)
+
+    else: 
+        conflicts = rule_conflicts
+        
     verdict, confidence = _verdict_and_confidence(retrieved_chunks, stale_chunks, conflicts)
     provenance = build_provenance_card(
         verdict=verdict,
