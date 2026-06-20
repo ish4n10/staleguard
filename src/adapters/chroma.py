@@ -46,3 +46,5 @@ def normalize_chroma_result(result: Mapping[str, Any]) -> list[dict[str, Any]]:
         chunks.append(normalize_chunk(raw_chunk, index=index))
 
     return chunks
+
+

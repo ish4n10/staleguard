@@ -1,3 +1,4 @@
+from .adapters.chroma import normalize_chroma_result
 from .alternatives.finder import find_fresh_alternatives
 from .audit_types import AuditResult
 from .conflicts.rules import detect_rule_conflicts
@@ -98,6 +99,21 @@ def audit(
         conflicts=conflicts,
         fresh_alternatives=fresh_alternatives,
         provenance=provenance,
+    )
+
+
+def audit_chroma_result(
+    query: str,
+    chroma_result: dict,
+    corpus: list[dict] | None = None,
+    use_nli: bool = False,
+) -> AuditResult:
+    retrieved_chunks = normalize_chroma_result(chroma_result)
+    return audit(
+        query=query,
+        retrieved_chunks=retrieved_chunks,
+        corpus=corpus,
+        use_nli=use_nli,
     )
 
 
