@@ -18,6 +18,8 @@ os.environ["HF_HUB_CACHE"] = str(HF_HUB_CACHE)
 os.environ["HUGGINGFACE_HUB_CACHE"] = str(HF_HUB_CACHE)
 os.environ["TRANSFORMERS_CACHE"] = str(TF_CACHE)
 os.environ["SENTENCE_TRANSFORMERS_HOME"] = str(ST_CACHE)
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
 MODEL_NAME = "cross-encoder/nli-deberta-v3-base"
 EMBED_MODEL_NAME = "all-MiniLM-L6-v2"
@@ -29,12 +31,27 @@ MIN_CONTRADICTION_MARGIN = 0.15
 _model = None
 _embedder = None
 
+
+def local_model_path(model_name: str) -> str:
+    model_dir = ST_CACHE / f"models--{model_name.replace('/', '--')}"
+    ref_file = model_dir / "refs" / "main"
+    if not ref_file.exists():
+        return model_name
+
+    snapshot_id = ref_file.read_text(encoding="utf-8").strip()
+    snapshot_dir = model_dir / "snapshots" / snapshot_id
+    if not snapshot_dir.exists():
+        return model_name
+
+    return str(snapshot_dir)
+
+
 def get_nli_model():
     global _model
     if _model is None:
         from sentence_transformers import CrossEncoder
 
-        _model = CrossEncoder(MODEL_NAME, cache_folder=str(ST_CACHE))
+        _model = CrossEncoder(local_model_path(MODEL_NAME))
     return _model
 
 
@@ -43,7 +60,7 @@ def get_embedder():
     if _embedder is None:
         from sentence_transformers import SentenceTransformer
 
-        _embedder = SentenceTransformer(EMBED_MODEL_NAME, cache_folder=str(ST_CACHE))
+        _embedder = SentenceTransformer(local_model_path(EMBED_MODEL_NAME))
     return _embedder
 
 

@@ -1,0 +1,173 @@
+[
+  {
+    "id": "redis_6_cluster_001",
+    "text": "Redis 6.2 cluster setup uses the requirepass directive together with masterauth so that every node in the cluster shares a single password-based authentication flow. Older guides recommend that operators use requirepass in redis.conf on each node before creating the cluster.",
+    "topic": "cluster_configuration",
+    "product": "redis",
+    "version": "6.2",
+    "date_ts": 1640995200,
+    "source": "redis-6.2-cluster.md",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "8.0"
+    }
+  },
+  {
+    "id": "redis_7_cluster_001",
+    "text": "Redis 7 cluster documentation began steering users toward ACL-aware authentication. Legacy requirepass examples still existed for compatibility, but the recommended direction was to create named users and align cluster node credentials with ACL rules instead of relying on a single global password.",
+    "topic": "cluster_configuration",
+    "product": "redis",
+    "version": "7.0",
+    "date_ts": 1672531200,
+    "source": "redis-7.0-cluster.md",
+    "metadata": {
+      "status": "aging"
+    }
+  },
+  {
+    "id": "redis_8_cluster_001",
+    "text": "Redis 8 cluster deployment guidance deprecated requirepass-based cluster authentication and removed it from the recommended setup path. Current cluster configuration expects ACL-managed users, explicit user permissions, and node-to-node authentication that follows the ACL configuration instead of a shared requirepass value.",
+    "topic": "cluster_configuration",
+    "product": "redis",
+    "version": "8.0",
+    "date_ts": 1735689600,
+    "source": "redis-8.0-cluster.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "redis_6_auth_001",
+    "text": "Redis 6 authentication guidance centers on a single requirepass secret for clients plus masterauth for replication links. Operational playbooks usually describe one shared password rather than named users with separate permissions.",
+    "topic": "authentication",
+    "product": "redis",
+    "version": "6.2",
+    "date_ts": 1640995200,
+    "source": "redis-6.2-auth.md",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "8.0"
+    }
+  },
+  {
+    "id": "redis_7_auth_001",
+    "text": "Redis 7 keeps compatibility with requirepass but pushes operators toward ACL users, category-based permissions, and separate credentials per role. Security guidance increasingly treats the single-password pattern as transitional rather than ideal.",
+    "topic": "authentication",
+    "product": "redis",
+    "version": "7.0",
+    "date_ts": 1672531200,
+    "source": "redis-7.0-auth.md",
+    "metadata": {
+      "status": "aging"
+    }
+  },
+  {
+    "id": "redis_8_auth_001",
+    "text": "Redis 8 operational guidance does not rely on one shared requirepass secret for authentication. Recommended deployments define ACL users, scope permissions by user, and manage node-to-node access with ACL identities instead of a single global password.",
+    "topic": "authentication",
+    "product": "redis",
+    "version": "8.0",
+    "date_ts": 1735689600,
+    "source": "redis-8.0-auth.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "redis_6_persistence_001",
+    "text": "Redis 6 persistence documentation recommends combining RDB snapshots with appendonly yes when you need both quick restarts and stronger durability guarantees. The guidance focuses on balancing snapshot intervals with append-only rewrite cost.",
+    "topic": "persistence",
+    "product": "redis",
+    "version": "6.2",
+    "date_ts": 1643673600,
+    "source": "redis-6.2-persistence.md",
+    "metadata": {
+      "status": "aging"
+    }
+  },
+  {
+    "id": "redis_8_persistence_001",
+    "text": "Redis 8 persistence guidance still supports RDB snapshots and the append-only file, but newer operational recommendations emphasize validating rewrite pressure, disk throughput, and recovery objectives during deployment. The persistence model itself remains available and supported.",
+    "topic": "persistence",
+    "product": "redis",
+    "version": "8.0",
+    "date_ts": 1735689600,
+    "source": "redis-8.0-persistence.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "redis_6_memory_001",
+    "text": "Redis 6 stores working data in memory and depends on maxmemory plus eviction policy choices to control pressure. Capacity planning guides focus on RAM sizing, dataset overhead, and replication buffers.",
+    "topic": "memory_management",
+    "product": "redis",
+    "version": "6.2",
+    "date_ts": 1640995200,
+    "source": "redis-6.2-memory.md",
+    "metadata": {
+      "status": "aging"
+    }
+  },
+  {
+    "id": "redis_8_memory_001",
+    "text": "Redis 8 keeps hot data in RAM and continues to rely on memory-efficient data structures for low-latency access. Capacity planning guidance focuses on maxmemory sizing, eviction policy choice, and operating headroom for replication and persistence overhead.",
+    "topic": "memory_management",
+    "product": "redis",
+    "version": "8.0",
+    "date_ts": 1735689600,
+    "source": "redis-8.0-memory.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "redis_6_replication_001",
+    "text": "Redis 6 replication setup uses replicaof together with masterauth when the primary requires a password. Operational runbooks describe configuring every replica with the shared primary password before synchronization.",
+    "topic": "replication",
+    "product": "redis",
+    "version": "6.2",
+    "date_ts": 1640995200,
+    "source": "redis-6.2-replication.md",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "8.0"
+    }
+  },
+  {
+    "id": "redis_8_replication_001",
+    "text": "Redis 8 replication guidance expects ACL-aware credentials for replica connections and recommends role-specific users instead of one shared password. The configuration still uses replicaof, but authentication policy follows ACL identity management.",
+    "topic": "replication",
+    "product": "redis",
+    "version": "8.0",
+    "date_ts": 1735689600,
+    "source": "redis-8.0-replication.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "redis_6_tls_001",
+    "text": "Redis 6 TLS deployment documentation covers enabling tls-port, distributing certificates, and keeping the plaintext port disabled in hardened environments. The guidance treats TLS as optional but recommended for production traffic.",
+    "topic": "tls_configuration",
+    "product": "redis",
+    "version": "6.2",
+    "date_ts": 1640995200,
+    "source": "redis-6.2-tls.md",
+    "metadata": {
+      "status": "aging"
+    }
+  },
+  {
+    "id": "redis_8_tls_001",
+    "text": "Redis 8 TLS deployment still uses tls-port and certificate-based setup, while newer operations guidance emphasizes rotating certificates, validating client identity, and monitoring encrypted connection overhead. TLS remains supported and recommended.",
+    "topic": "tls_configuration",
+    "product": "redis",
+    "version": "8.0",
+    "date_ts": 1735689600,
+    "source": "redis-8.0-tls.md",
+    "metadata": {
+      "status": "current"
+    }
+  }
+]
