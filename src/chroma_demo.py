@@ -11,11 +11,13 @@ if __package__:
     from . import audit_chroma_result
     from .adapters.chroma import normalize_chroma_result
     from .conflicts.nli import get_embedder
+    from .schema import prepare_chunks
 else:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from src import audit_chroma_result
     from src.adapters.chroma import normalize_chroma_result
     from src.conflicts.nli import get_embedder
+    from src.schema import prepare_chunks
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -80,12 +82,32 @@ def query_collection(
     )
 
 
+def retrieval_summary(chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    summary = []
+    for chunk in chunks:
+        metadata = chunk.get("metadata", {})
+        summary.append(
+            {
+                "id": chunk.get("id"),
+                "source": chunk.get("source"),
+                "product": chunk.get("product"),
+                "topic": chunk.get("topic"),
+                "version": chunk.get("version"),
+                "distance": metadata.get("chroma_distance"),
+                "inferred_fields": metadata.get("staleguard_inferred_fields", []),
+                "missing_audit_fields": metadata.get("staleguard_missing_audit_fields", []),
+            }
+        )
+    return summary
+
+
 def main() -> None:
     query = "How do I configure Redis cluster authentication in Redis 8?"
     corpus = load_corpus()
     _, collection = rebuild_collection(corpus)
     chroma_result = query_collection(collection, query=query, n_results=5)
     normalized_chunks = normalize_chroma_result(chroma_result)
+    prepared_chunks = prepare_chunks(normalized_chunks)
     audit_result = audit_chroma_result(
         query=query,
         chroma_result=chroma_result,
@@ -98,7 +120,10 @@ def main() -> None:
         "chroma_path": str(CHROMA_PATH),
         "collection_name": COLLECTION_NAME,
         "corpus_size": len(corpus),
-        "retrieved_chunks": normalized_chunks,
+        "raw_chroma_result": chroma_result,
+        "normalized_chunks": normalized_chunks,
+        "prepared_chunks": prepared_chunks,
+        "retrieval_summary": retrieval_summary(prepared_chunks),
         "audit_result": asdict(audit_result),
     }
     print(json.dumps(output, indent=2, ensure_ascii=False))
