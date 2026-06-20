@@ -4,6 +4,7 @@ from .audit_types import AuditResult
 from .conflicts.rules import detect_rule_conflicts
 from .scorers.freshness import score_chunk_freshness
 from .conflicts.nli import score_chunk_pair
+from .schema import prepare_chunks
 from itertools import combinations
 
 
@@ -16,6 +17,7 @@ def build_provenance_card(
     conflicts: list[dict],
 ) -> dict:
     recommendation = _recommendation(stale_chunks, fresh_alternatives, conflicts)
+    schema_issues = collect_schema_issues(retrieved_chunks)
     return {
         "verdict": verdict,
         "confidence": confidence,
@@ -23,11 +25,46 @@ def build_provenance_card(
         "stale_count": len(stale_chunks),
         "conflict_count": len(conflicts),
         "used_chunks": [chunk.get("id") for chunk in retrieved_chunks],
+        "schema_summary": {
+            "chunks_with_schema_issues": len(schema_issues),
+            "chunks_with_inferred_fields": sum(1 for issue in schema_issues if issue["inferred_fields"]),
+            "chunks_missing_required_fields": sum(
+                1 for issue in schema_issues if issue["missing_required_fields"]
+            ),
+            "chunks_missing_audit_fields": sum(
+                1 for issue in schema_issues if issue["missing_audit_fields"]
+            ),
+        },
+        "schema_issues": schema_issues,
         "stale_chunks": stale_chunks,
         "fresh_alternatives": fresh_alternatives,
         "conflicts": conflicts,
         "recommendation": recommendation,
     }
+
+
+def collect_schema_issues(chunks: list[dict]) -> list[dict]:
+    issues = []
+    for chunk in chunks:
+        metadata = chunk.get("metadata", {})
+        inferred_fields = metadata.get("staleguard_inferred_fields", [])
+        missing_required = metadata.get("staleguard_missing_required", [])
+        missing_audit = metadata.get("staleguard_missing_audit_fields", [])
+
+        if not inferred_fields and not missing_required and not missing_audit:
+            continue
+
+        issues.append(
+            {
+                "id": chunk.get("id"),
+                "source": chunk.get("source"),
+                "inferred_fields": inferred_fields,
+                "missing_required_fields": missing_required,
+                "missing_audit_fields": missing_audit,
+            }
+        )
+
+    return issues
 
 def collect_nli_conflicts(chunks: list[dict]) -> list[dict]:
     conflicts = [] 
@@ -66,27 +103,33 @@ def audit(
     corpus: list[dict] | None = None,
     use_nli: bool = False
 ) -> AuditResult:
+    prepared_retrieved = prepare_chunks(retrieved_chunks)
+    prepared_corpus = prepare_chunks(corpus)
+
     stale_chunks = [
         result
-        for result in (score_chunk_freshness(chunk, query, corpus) for chunk in retrieved_chunks)
+        for result in (
+            score_chunk_freshness(chunk, query, prepared_corpus)
+            for chunk in prepared_retrieved
+        )
         if result["verdict"] in {"STALE", "AGING"}
     ]
-    fresh_alternatives = find_fresh_alternatives(retrieved_chunks, corpus, query)
-    rule_conflicts = detect_rule_conflicts(retrieved_chunks)
+    fresh_alternatives = find_fresh_alternatives(prepared_retrieved, prepared_corpus, query)
+    rule_conflicts = detect_rule_conflicts(prepared_retrieved)
 
 
     if use_nli:
-        nli_conflicts = collect_nli_conflicts(retrieved_chunks)
+        nli_conflicts = collect_nli_conflicts(prepared_retrieved)
         conflicts = merge_conflicts(rule_conflicts, nli_conflicts)
 
     else: 
         conflicts = rule_conflicts
         
-    verdict, confidence = _verdict_and_confidence(retrieved_chunks, stale_chunks, conflicts)
+    verdict, confidence = _verdict_and_confidence(prepared_retrieved, stale_chunks, conflicts)
     provenance = build_provenance_card(
         verdict=verdict,
         confidence=confidence,
-        retrieved_chunks=retrieved_chunks,
+        retrieved_chunks=prepared_retrieved,
         stale_chunks=stale_chunks,
         fresh_alternatives=fresh_alternatives,
         conflicts=conflicts,
@@ -136,12 +179,19 @@ def _verdict_and_confidence(
     stale_chunks: list[dict],
     conflicts: list[dict],
 ) -> tuple[str, float]:
+    if any(chunk.get("metadata", {}).get("staleguard_missing_required") for chunk in retrieved_chunks):
+        return "UNKNOWN", 0.0
     if conflicts and stale_chunks:
         return "MIXED", 0.75
     if conflicts:
         return "CONFLICTED", 0.8
     if stale_chunks:
         return "STALE", 0.7
+    if retrieved_chunks and any(
+        chunk.get("metadata", {}).get("staleguard_missing_audit_fields")
+        for chunk in retrieved_chunks
+    ):
+        return "UNKNOWN", 0.4
     if retrieved_chunks:
         return "FRESH", 0.85
     return "UNKNOWN", 0.0
