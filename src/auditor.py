@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from .adapters.chroma import normalize_chroma_result
 from .adapters.langchain import normalize_langchain_docs
 from .alternatives.finder import find_fresh_alternatives
@@ -140,7 +141,8 @@ def audit(
     query: str,
     retrieved_chunks: list[dict],
     corpus: list[dict] | None = None,
-    use_nli: bool = False
+    use_nli: bool = False,
+    block_on_conflict: bool = False,
 ) -> AuditResult:
     prepared_retrieved = prepare_chunks(retrieved_chunks)
     prepared_corpus = prepare_chunks(corpus)
@@ -164,7 +166,12 @@ def audit(
     else: 
         conflicts = rule_conflicts
         
-    verdict, confidence = _verdict_and_confidence(prepared_retrieved, stale_chunks, conflicts)
+    verdict, confidence = _verdict_and_confidence(
+        prepared_retrieved,
+        stale_chunks,
+        conflicts,
+        block_on_conflict=block_on_conflict,
+    )
     provenance = build_provenance_card(
         verdict=verdict,
         confidence=confidence,
@@ -189,6 +196,7 @@ def audit_chroma_result(
     chroma_result: dict,
     corpus: list[dict] | None = None,
     use_nli: bool = False,
+    block_on_conflict: bool = False,
 ) -> AuditResult:
     retrieved_chunks = normalize_chroma_result(chroma_result)
     return audit(
@@ -196,6 +204,7 @@ def audit_chroma_result(
         retrieved_chunks=retrieved_chunks,
         corpus=corpus,
         use_nli=use_nli,
+        block_on_conflict=block_on_conflict,
     )
 
 
@@ -204,6 +213,7 @@ def audit_langchain_docs(
     docs: list[object],
     corpus: list[dict] | None = None,
     use_nli: bool = False,
+    block_on_conflict: bool = False,
 ) -> AuditResult:
     retrieved_chunks = normalize_langchain_docs(docs)
     return audit(
@@ -211,7 +221,61 @@ def audit_langchain_docs(
         retrieved_chunks=retrieved_chunks,
         corpus=corpus,
         use_nli=use_nli,
+        block_on_conflict=block_on_conflict,
     )
+
+
+def audit_retrieved(
+    query: str,
+    retrieved: object,
+    corpus: list[dict] | None = None,
+    use_nli: bool = False,
+    block_on_conflict: bool = False,
+) -> AuditResult:
+    retrieved_chunks = normalize_retrieved_input(retrieved)
+    return audit(
+        query=query,
+        retrieved_chunks=retrieved_chunks,
+        corpus=corpus,
+        use_nli=use_nli,
+        block_on_conflict=block_on_conflict,
+    )
+
+
+def normalize_retrieved_input(retrieved: object) -> list[dict]:
+    if retrieved is None:
+        return []
+
+    if _looks_like_chroma_result(retrieved):
+        return normalize_chroma_result(retrieved)
+
+    if isinstance(retrieved, list):
+        if not retrieved:
+            return []
+        first_item = retrieved[0]
+        if _looks_like_normalized_chunk(first_item):
+            return retrieved
+        if _looks_like_langchain_doc(first_item):
+            return normalize_langchain_docs(retrieved)
+
+    raise TypeError(
+        "Unsupported retrieved input. Expected raw Chroma query result, "
+        "LangChain-style documents, or normalized chunk dicts."
+    )
+
+
+def _looks_like_chroma_result(value: object) -> bool:
+    return isinstance(value, Mapping) and "ids" in value and "documents" in value
+
+
+def _looks_like_normalized_chunk(value: object) -> bool:
+    return isinstance(value, Mapping) and "text" in value
+
+
+def _looks_like_langchain_doc(value: object) -> bool:
+    if isinstance(value, Mapping):
+        return "page_content" in value or "metadata" in value
+    return hasattr(value, "page_content") and hasattr(value, "metadata")
 
 
 def _recommendation(
@@ -232,11 +296,14 @@ def _verdict_and_confidence(
     retrieved_chunks: list[dict],
     stale_chunks: list[dict],
     conflicts: list[dict],
+    block_on_conflict: bool = False,
 ) -> tuple[str, float]:
     if any(chunk.get("metadata", {}).get("staleguard_missing_required") for chunk in retrieved_chunks):
         return "UNKNOWN", 0.0
     if conflicts and stale_chunks:
         confidence = min(0.98, max(_stale_confidence(stale_chunks), _conflict_confidence(conflicts)) + 0.05)
+        if block_on_conflict:
+            return "CONFLICTED", confidence
         return "MIXED", confidence
     if conflicts:
         return "CONFLICTED", _conflict_confidence(conflicts)
