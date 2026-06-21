@@ -1,0 +1,236 @@
+[
+  {
+    "id": "loop_eng_2024_context_001",
+    "text": "Loop engineering guidance from 2024 recommends rebuilding the agent context from scratch on every turn. The controller should avoid long-lived scratchpads and instead regenerate state from the latest user request plus a large block of retrieved documents.",
+    "topic": "context_engineering",
+    "product": "agent_systems",
+    "version": "2024",
+    "date_ts": 1704067200,
+    "source": "loop-engineering-2024-context.md",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "2026"
+    }
+  },
+  {
+    "id": "loop_eng_2025_context_001",
+    "text": "Loop engineering guidance from 2025 begins introducing rolling working memory. Controllers may keep a short-lived scratchpad between turns, but many teams still rebuild most of the context bundle after every significant tool call.",
+    "topic": "context_engineering",
+    "product": "agent_systems",
+    "version": "2025",
+    "date_ts": 1735689600,
+    "source": "loop-engineering-2025-context.md",
+    "metadata": {
+      "status": "aging"
+    }
+  },
+  {
+    "id": "loop_eng_2026_context_001",
+    "text": "Loop engineering guidance for 2026 treats persistent working memory as a first-class component. The agent loop should keep a compact scratchpad, preserve task state across turns, and only rebuild the full context when the plan or user goal changes materially.",
+    "topic": "context_engineering",
+    "product": "agent_systems",
+    "version": "2026",
+    "date_ts": 1767225600,
+    "source": "loop-engineering-2026-context.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "context_eng_2024_retrieval_001",
+    "text": "Context engineering playbooks from 2024 recommend retrieving many chunks and stuffing them directly into the prompt. Compression is discouraged because engineers fear losing evidence, so the system should pass as much raw retrieved text as possible to the model.",
+    "topic": "retrieval_policy",
+    "product": "agent_systems",
+    "version": "2024",
+    "date_ts": 1704067200,
+    "source": "context-engineering-2024-retrieval.md",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "2026"
+    }
+  },
+  {
+    "id": "context_eng_2026_retrieval_001",
+    "text": "Context engineering playbooks for 2026 recommend compressing retrieved context before generation. Retrieval should gather candidates, then a smaller evidence set should be summarized or structured so the agent loop carries only task-relevant facts forward.",
+    "topic": "retrieval_policy",
+    "product": "agent_systems",
+    "version": "2026",
+    "date_ts": 1767225600,
+    "source": "context-engineering-2026-retrieval.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "loop_eng_2024_tools_001",
+    "text": "Older loop engineering documents advise calling at most one external tool per turn. The agent should stop after a single tool response and hand control back to the model with a fresh prompt on the next round.",
+    "topic": "tool_loop_policy",
+    "product": "agent_systems",
+    "version": "2024",
+    "date_ts": 1704067200,
+    "source": "loop-engineering-2024-tools.md",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "2026"
+    }
+  },
+  {
+    "id": "loop_eng_2026_tools_001",
+    "text": "Modern loop engineering documents expect multi-step tool loops. The controller may call tools repeatedly in a single run until stop criteria are met, provided the loop tracks state, budgets, and recovery conditions.",
+    "topic": "tool_loop_policy",
+    "product": "agent_systems",
+    "version": "2026",
+    "date_ts": 1767225600,
+    "source": "loop-engineering-2026-tools.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "context_eng_2024_memory_001",
+    "text": "Context engineering notes from 2024 recommend keeping all conversation history in the prompt whenever possible. Memory compaction is considered risky, and the preferred policy is to preserve full transcripts plus retrieval snippets.",
+    "topic": "memory_policy",
+    "product": "agent_systems",
+    "version": "2024",
+    "date_ts": 1704067200,
+    "source": "context-engineering-2024-memory.md",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "2026"
+    }
+  },
+  {
+    "id": "context_eng_2026_memory_001",
+    "text": "Context engineering notes for 2026 recommend selective memory. Systems should maintain a compact state summary, retain verified decisions, and discard bulky interaction traces unless they are still needed for execution or audit.",
+    "topic": "memory_policy",
+    "product": "agent_systems",
+    "version": "2026",
+    "date_ts": 1767225600,
+    "source": "context-engineering-2026-memory.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "agent_ops_2026_eval_001",
+    "text": "Agent operations guidance for 2026 recommends evaluating loop behavior with tool success rate, false-stop rate, recovery quality, and context budget usage. Teams should track both answer quality and process quality across runs.",
+    "topic": "evaluation",
+    "product": "agent_systems",
+    "version": "2026",
+    "date_ts": 1767225600,
+    "source": "agent-ops-2026-evaluation.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "agent_ops_2024_eval_001",
+    "text": "Earlier agent operations guidance focuses primarily on final answer accuracy. It gives little attention to loop traces, tool budget usage, or recovery behavior inside the agent controller.",
+    "topic": "evaluation",
+    "product": "agent_systems",
+    "version": "2024",
+    "date_ts": 1704067200,
+    "source": "agent-ops-2024-evaluation.md",
+    "metadata": {
+      "status": "aging"
+    }
+  },
+  {
+    "id": "context_eng_2026_guardrails_001",
+    "text": "Context engineering guidance for 2026 says guardrails should attach to state transitions, not just final outputs. The loop should validate memory writes, tool parameters, and high-risk context injections before the next reasoning step.",
+    "topic": "guardrails",
+    "product": "agent_systems",
+    "version": "2026",
+    "date_ts": 1767225600,
+    "source": "context-engineering-2026-guardrails.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "context_eng_2024_guardrails_001",
+    "text": "Older context engineering guidance treats guardrails mostly as post-generation filters. The system should let the model finish its answer and only then run validation or safety checks.",
+    "topic": "guardrails",
+    "product": "agent_systems",
+    "version": "2024",
+    "date_ts": 1704067200,
+    "source": "context-engineering-2024-guardrails.md",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "2026"
+    }
+  },
+  {
+    "id": "loop_eng_2026_planning_001",
+    "text": "Loop engineering planning guidance for 2026 recommends explicit stop criteria, resumable plan steps, and state-aware retries. Controllers should treat planning as a structured loop artifact rather than ephemeral model prose.",
+    "topic": "planning",
+    "product": "agent_systems",
+    "version": "2026",
+    "date_ts": 1767225600,
+    "source": "loop-engineering-2026-planning.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "loop_eng_2024_planning_001",
+    "text": "Loop engineering notes from 2024 describe planning as a one-shot prompt prefix. The system should generate a plan at the beginning and avoid mutating it while tools are running.",
+    "topic": "planning",
+    "product": "agent_systems",
+    "version": "2024",
+    "date_ts": 1704067200,
+    "source": "loop-engineering-2024-planning.md",
+    "metadata": {
+      "status": "aging"
+    }
+  },
+  {
+    "id": "context_eng_2026_context_budget_001",
+    "text": "Current context engineering documents recommend explicit budget allocation across instructions, memory, retrieved evidence, and tool traces. The loop should shed low-value context before it drops high-signal evidence.",
+    "topic": "context_budgeting",
+    "product": "agent_systems",
+    "version": "2026",
+    "date_ts": 1767225600,
+    "source": "context-engineering-2026-budget.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "context_eng_2024_context_budget_001",
+    "text": "Earlier context engineering notes assume the model prompt should be filled as much as possible. Context budget allocation is informal, and the system is encouraged to maximize raw information density over structure.",
+    "topic": "context_budgeting",
+    "product": "agent_systems",
+    "version": "2024",
+    "date_ts": 1704067200,
+    "source": "context-engineering-2024-budget.md",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "2026"
+    }
+  },
+  {
+    "id": "loop_eng_misc_2026_ui_001",
+    "text": "Agent control panels in 2026 usually visualize loop state, tool budget, memory edits, and pending approvals. Observability helps teams debug context engineering and loop behavior together.",
+    "topic": "observability",
+    "product": "agent_systems",
+    "version": "2026",
+    "date_ts": 1767225600,
+    "source": "loop-engineering-2026-observability.md",
+    "metadata": {
+      "status": "current"
+    }
+  },
+  {
+    "id": "context_eng_2026_irrelevant_001",
+    "text": "A context engineering appendix on visual dashboard theming discusses typography, color systems, and audit log layouts. It is operationally useful for product polish but unrelated to the core loop policy for retrieval, memory, or tool control.",
+    "topic": "dashboard_theming",
+    "product": "agent_systems",
+    "version": "2026",
+    "date_ts": 1767225600,
+    "source": "context-engineering-2026-dashboard.md",
+    "metadata": {
+      "status": "current"
+    }
+  }
+]

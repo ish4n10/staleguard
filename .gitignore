@@ -2,3 +2,5 @@
 venv
 poc3_chroma
 __pycache__
+tests*
+!README.md
