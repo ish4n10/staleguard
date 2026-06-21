@@ -1,4 +1,5 @@
 from .adapters.chroma import normalize_chroma_result
+from .adapters.langchain import normalize_langchain_docs
 from .alternatives.finder import find_fresh_alternatives
 from .audit_types import AuditResult
 from .conflicts.rules import detect_rule_conflicts
@@ -190,6 +191,21 @@ def audit_chroma_result(
     use_nli: bool = False,
 ) -> AuditResult:
     retrieved_chunks = normalize_chroma_result(chroma_result)
+    return audit(
+        query=query,
+        retrieved_chunks=retrieved_chunks,
+        corpus=corpus,
+        use_nli=use_nli,
+    )
+
+
+def audit_langchain_docs(
+    query: str,
+    docs: list[object],
+    corpus: list[dict] | None = None,
+    use_nli: bool = False,
+) -> AuditResult:
+    retrieved_chunks = normalize_langchain_docs(docs)
     return audit(
         query=query,
         retrieved_chunks=retrieved_chunks,
