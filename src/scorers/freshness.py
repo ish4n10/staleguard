@@ -82,6 +82,8 @@ def score_chunk_freshness(
             1.0,
             "FRESH",
             f"user explicitly requested version {chunk.get('version')}",
+            source="query",
+            confidence=1.0,
         )
 
     superseded_by = metadata.get("superseded_by")
@@ -92,10 +94,19 @@ def score_chunk_freshness(
             "STALE",
             f"metadata marks chunk as superseded by {superseded_by or 'a newer version'}",
             superseded_by,
+            source="metadata",
+            confidence=0.95,
         )
 
     if not chunk_date_ts:
-        return _result(chunk_id, 0.5, "UNKNOWN", "missing date_ts metadata")
+        return _result(
+            chunk_id,
+            0.5,
+            "UNKNOWN",
+            "missing date_ts metadata",
+            source="metadata_missing",
+            confidence=0.4,
+        )
 
     freshness = round(temporal_score(chunk_date_ts, now_ts, decay_rate), 3)
     newer_chunk = find_superseding_chunk(chunk, corpus)
@@ -107,12 +118,28 @@ def score_chunk_freshness(
             "STALE",
             f"superseded by newer chunk {newer_chunk['id']}",
             newer_chunk["id"],
+            source="corpus_comparison",
+            confidence=0.8,
         )
 
     if freshness < 0.4:
-        return _result(chunk_id, freshness, "AGING", "no fresher replacement found, but chunk is old")
+        return _result(
+            chunk_id,
+            freshness,
+            "AGING",
+            "no fresher replacement found, but chunk is old",
+            source="temporal",
+            confidence=0.6,
+        )
 
-    return _result(chunk_id, freshness, "FRESH", "chunk appears current for its topic")
+    return _result(
+        chunk_id,
+        freshness,
+        "FRESH",
+        "chunk appears current for its topic",
+        source="temporal",
+        confidence=max(0.5, freshness),
+    )
 
 
 def _result(
@@ -121,6 +148,8 @@ def _result(
     verdict: str,
     reason: str,
     newer_available: str | None = None,
+    source: str | None = None,
+    confidence: float | None = None,
 ) -> dict[str, Any]:
     return {
         "id": chunk_id,
@@ -128,4 +157,6 @@ def _result(
         "verdict": verdict,
         "reason": reason,
         "newer_available": newer_available,
+        "source": source,
+        "confidence": confidence,
     }

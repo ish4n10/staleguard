@@ -84,17 +84,55 @@ def collect_nli_conflicts(chunks: list[dict]) -> list[dict]:
     return conflicts
         
 def merge_conflicts(rule_conflicts, nli_conflicts) -> list[dict]:
-    merged = [] 
-    seen = set() 
+    merged: dict[tuple[str, str], dict] = {}
 
-    for conflict in rule_conflicts + nli_conflicts:
-        pair = tuple(sorted((conflict['chunk_a'], conflict['chunk_b'])))
-        if pair in seen:
+    for conflict in rule_conflicts:
+        pair = tuple(sorted((conflict["chunk_a"], conflict["chunk_b"])))
+        merged[pair] = {
+            "chunk_a": pair[0],
+            "chunk_b": pair[1],
+            "type": conflict["type"],
+            "source": "rules",
+            "sources": ["rules"],
+            "reason": conflict.get("reason"),
+            "confidence": conflict.get("confidence", 0.75),
+            "rule_confidence": conflict.get("confidence", 0.75),
+            "nli_confidence": None,
+            "shared_terms": conflict.get("shared_terms", []),
+        }
+
+    for conflict in nli_conflicts:
+        pair = tuple(sorted((conflict["chunk_a"], conflict["chunk_b"])))
+        entry = merged.get(pair)
+        nli_confidence = conflict.get("confidence", 0.0)
+        if entry is None:
+            merged[pair] = {
+                "chunk_a": pair[0],
+                "chunk_b": pair[1],
+                "type": conflict["type"],
+                "source": "nli",
+                "sources": ["nli"],
+                "reason": conflict.get("reason"),
+                "confidence": nli_confidence,
+                "rule_confidence": None,
+                "nli_confidence": nli_confidence,
+                "label": conflict.get("label"),
+                "similarity": conflict.get("similarity"),
+                "scores": conflict.get("scores"),
+            }
             continue
-        seen.add(pair)
-        merged.append(conflict)
 
-    return merged 
+        if "nli" not in entry["sources"]:
+            entry["sources"].append("nli")
+        entry["source"] = "rules+nli"
+        entry["nli_confidence"] = nli_confidence
+        entry["label"] = conflict.get("label")
+        entry["similarity"] = conflict.get("similarity")
+        entry["scores"] = conflict.get("scores")
+        entry["confidence"] = min(0.98, max(entry["rule_confidence"] or 0.0, nli_confidence) + 0.1)
+        entry["reason"] = "Rules and NLI both indicate a version conflict"
+
+    return list(merged.values())
 
 
 def audit(
@@ -182,11 +220,12 @@ def _verdict_and_confidence(
     if any(chunk.get("metadata", {}).get("staleguard_missing_required") for chunk in retrieved_chunks):
         return "UNKNOWN", 0.0
     if conflicts and stale_chunks:
-        return "MIXED", 0.75
+        confidence = min(0.98, max(_stale_confidence(stale_chunks), _conflict_confidence(conflicts)) + 0.05)
+        return "MIXED", confidence
     if conflicts:
-        return "CONFLICTED", 0.8
+        return "CONFLICTED", _conflict_confidence(conflicts)
     if stale_chunks:
-        return "STALE", 0.7
+        return "STALE", _stale_confidence(stale_chunks)
     if retrieved_chunks and any(
         chunk.get("metadata", {}).get("staleguard_missing_audit_fields")
         for chunk in retrieved_chunks
@@ -195,3 +234,15 @@ def _verdict_and_confidence(
     if retrieved_chunks:
         return "FRESH", 0.85
     return "UNKNOWN", 0.0
+
+
+def _stale_confidence(stale_chunks: list[dict]) -> float:
+    if not stale_chunks:
+        return 0.0
+    return max(chunk.get("confidence", 0.7) or 0.7 for chunk in stale_chunks)
+
+
+def _conflict_confidence(conflicts: list[dict]) -> float:
+    if not conflicts:
+        return 0.0
+    return max(conflict.get("confidence", 0.75) or 0.75 for conflict in conflicts)
