@@ -78,14 +78,24 @@ print(result.provenance)
 ### 2. Use the middleware-style entrypoint
 
 ```python
-from src import audit_retrieved
+from src import StaleGuardConfig, audit_retrieved
+
+config = StaleGuardConfig(
+    use_nli=True,
+    block_on_conflict=False,
+    embedding_model="all-MiniLM-L6-v2",
+    conflict_model="cross-encoder/nli-deberta-v3-base",
+    similarity_threshold=0.40,
+    contradiction_threshold=0.80,
+    contradiction_margin=0.15,
+    cache_dir=".cache/huggingface",
+)
 
 result = audit_retrieved(
     query="How do I configure Redis Cluster in Redis 8?",
     retrieved=retriever_output,
     corpus=corpus,
-    use_nli=True,
-    block_on_conflict=False,
+    config=config,
 )
 ```
 

@@ -2,6 +2,7 @@ from collections.abc import Mapping
 from .adapters.chroma import normalize_chroma_result
 from .adapters.langchain import normalize_langchain_docs
 from .alternatives.finder import find_fresh_alternatives
+from .config import StaleGuardConfig
 from .audit_types import AuditResult
 from .conflicts.rules import detect_rule_conflicts
 from .scorers.freshness import score_chunk_freshness
@@ -68,7 +69,10 @@ def collect_schema_issues(chunks: list[dict]) -> list[dict]:
 
     return issues
 
-def collect_nli_conflicts(chunks: list[dict]) -> list[dict]:
+def collect_nli_conflicts(
+    chunks: list[dict],
+    config: StaleGuardConfig | None = None,
+) -> list[dict]:
     conflicts = [] 
     
     for chunk_a, chunk_b in combinations(chunks, 2):
@@ -79,7 +83,7 @@ def collect_nli_conflicts(chunks: list[dict]) -> list[dict]:
         if chunk_a.get('version') == chunk_b.get('version'):
             continue
 
-        result = score_chunk_pair(chunk_a, chunk_b)
+        result = score_chunk_pair(chunk_a, chunk_b, config=config)
         if result['is_conflict']:
             conflicts.append(result)
 
@@ -143,7 +147,17 @@ def audit(
     corpus: list[dict] | None = None,
     use_nli: bool = False,
     block_on_conflict: bool = False,
+    config: StaleGuardConfig | None = None,
 ) -> AuditResult:
+    effective_config = config or StaleGuardConfig(
+        use_nli=use_nli,
+        block_on_conflict=block_on_conflict,
+    )
+
+    if config is not None:
+        use_nli = config.use_nli
+        block_on_conflict = config.block_on_conflict
+
     prepared_retrieved = prepare_chunks(retrieved_chunks)
     prepared_corpus = prepare_chunks(corpus)
 
@@ -160,7 +174,7 @@ def audit(
 
 
     if use_nli:
-        nli_conflicts = collect_nli_conflicts(prepared_retrieved)
+        nli_conflicts = collect_nli_conflicts(prepared_retrieved, config=effective_config)
         conflicts = merge_conflicts(rule_conflicts, nli_conflicts)
 
     else: 
@@ -197,6 +211,7 @@ def audit_chroma_result(
     corpus: list[dict] | None = None,
     use_nli: bool = False,
     block_on_conflict: bool = False,
+    config: StaleGuardConfig | None = None,
 ) -> AuditResult:
     retrieved_chunks = normalize_chroma_result(chroma_result)
     return audit(
@@ -205,6 +220,7 @@ def audit_chroma_result(
         corpus=corpus,
         use_nli=use_nli,
         block_on_conflict=block_on_conflict,
+        config=config,
     )
 
 
@@ -214,6 +230,7 @@ def audit_langchain_docs(
     corpus: list[dict] | None = None,
     use_nli: bool = False,
     block_on_conflict: bool = False,
+    config: StaleGuardConfig | None = None,
 ) -> AuditResult:
     retrieved_chunks = normalize_langchain_docs(docs)
     return audit(
@@ -222,6 +239,7 @@ def audit_langchain_docs(
         corpus=corpus,
         use_nli=use_nli,
         block_on_conflict=block_on_conflict,
+        config=config,
     )
 
 
@@ -231,6 +249,7 @@ def audit_retrieved(
     corpus: list[dict] | None = None,
     use_nli: bool = False,
     block_on_conflict: bool = False,
+    config: StaleGuardConfig | None = None,
 ) -> AuditResult:
     retrieved_chunks = normalize_retrieved_input(retrieved)
     return audit(
@@ -239,6 +258,7 @@ def audit_retrieved(
         corpus=corpus,
         use_nli=use_nli,
         block_on_conflict=block_on_conflict,
+        config=config,
     )
 
 
