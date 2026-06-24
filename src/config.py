@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -20,3 +21,5 @@ class StaleGuardConfig:
     contradiction_margin: float = 0.15
 
     cache_dir: str | Path | None = None
+    embedding_provider: Any = field(default=None, repr=False, compare=False)
+    conflict_provider: Any = field(default=None, repr=False, compare=False)
