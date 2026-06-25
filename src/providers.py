@@ -1,4 +1,7 @@
 import os
+import io
+import warnings
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any, Protocol, cast
@@ -9,6 +12,13 @@ from .config import StaleGuardConfig
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
+warnings.filterwarnings(
+    "ignore",
+    message=r".*cache_dir argument is deprecated.*",
+)
 
 
 class EmbeddingProvider(Protocol):
@@ -96,6 +106,12 @@ def _local_model_path(model_name: str, config: StaleGuardConfig) -> str:
     return str(snapshot_dir)
 
 
+@contextmanager
+def _silence_model_load():
+    with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+        yield
+
+
 class LocalSentenceTransformerEmbeddingProvider:
     def __init__(self, config: StaleGuardConfig) -> None:
         self.config = config
@@ -104,9 +120,12 @@ class LocalSentenceTransformerEmbeddingProvider:
         cache_key = (self.config.embedding_backend, self.config.embedding_model)
         embedder = _embedder_cache.get(cache_key)
         if embedder is None:
-            from sentence_transformers import SentenceTransformer
+            with _silence_model_load():
+                from sentence_transformers import SentenceTransformer
 
-            embedder = SentenceTransformer(_local_model_path(self.config.embedding_model, self.config))
+                embedder = SentenceTransformer(
+                    _local_model_path(self.config.embedding_model, self.config)
+                )
             _embedder_cache[cache_key] = embedder
         return embedder
 
@@ -124,9 +143,10 @@ class LocalCrossEncoderConflictProvider:
         cache_key = (self.config.conflict_backend, self.config.conflict_model)
         model = _model_cache.get(cache_key)
         if model is None:
-            from sentence_transformers import CrossEncoder
+            with _silence_model_load():
+                from sentence_transformers import CrossEncoder
 
-            model = CrossEncoder(_local_model_path(self.config.conflict_model, self.config))
+                model = CrossEncoder(_local_model_path(self.config.conflict_model, self.config))
             _model_cache[cache_key] = model
         return model
 

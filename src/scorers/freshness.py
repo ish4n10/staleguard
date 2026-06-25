@@ -72,6 +72,7 @@ def score_chunk_freshness(
     metadata = chunk.get("metadata", {})
     chunk_id = chunk.get("id")
     chunk_date_ts = chunk.get("date_ts")
+    status = metadata.get("status")
 
     if now_ts is None:
         now_ts = int(datetime.now().timestamp())
@@ -96,6 +97,26 @@ def score_chunk_freshness(
             superseded_by,
             source="metadata",
             confidence=0.95,
+        )
+
+    if status == "current":
+        return _result(
+            chunk_id,
+            1.0,
+            "FRESH",
+            "metadata marks chunk as current",
+            source="metadata",
+            confidence=0.95,
+        )
+
+    if status == "aging":
+        return _result(
+            chunk_id,
+            0.55,
+            "AGING",
+            "metadata marks chunk as aging but still valid",
+            source="metadata",
+            confidence=0.7,
         )
 
     if not chunk_date_ts:

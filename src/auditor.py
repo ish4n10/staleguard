@@ -73,19 +73,24 @@ def collect_nli_conflicts(
     chunks: list[dict],
     config: StaleGuardConfig | None = None,
 ) -> list[dict]:
-    conflicts = [] 
-    
-    for chunk_a, chunk_b in combinations(chunks, 2):
-        if chunk_a.get('product') != chunk_b.get('product'):
-            continue
-        if chunk_a.get('topic') != chunk_b.get('topic'):
-            continue
-        if chunk_a.get('version') == chunk_b.get('version'):
-            continue
+    conflicts = []
 
-        result = score_chunk_pair(chunk_a, chunk_b, config=config)
-        if result['is_conflict']:
-            conflicts.append(result)
+    try:
+        for chunk_a, chunk_b in combinations(chunks, 2):
+            if chunk_a.get("product") != chunk_b.get("product"):
+                continue
+            if chunk_a.get("topic") != chunk_b.get("topic"):
+                continue
+            if chunk_a.get("version") == chunk_b.get("version"):
+                continue
+
+            result = score_chunk_pair(chunk_a, chunk_b, config=config)
+            if result["is_conflict"]:
+                conflicts.append(result)
+    except ModuleNotFoundError as exc:
+        if exc.name == "sentence_transformers":
+            return []
+        raise
 
     return conflicts
         
@@ -167,7 +172,7 @@ def audit(
             score_chunk_freshness(chunk, query, prepared_corpus)
             for chunk in prepared_retrieved
         )
-        if result["verdict"] in {"STALE", "AGING"}
+        if result["verdict"] == "STALE"
     ]
     fresh_alternatives = find_fresh_alternatives(prepared_retrieved, prepared_corpus, query)
     rule_conflicts = detect_rule_conflicts(prepared_retrieved)

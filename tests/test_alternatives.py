@@ -36,7 +36,6 @@ class FreshAlternativeFinderTests(unittest.TestCase):
             now_ts=self.now_ts,
         )
 
-        print("\nalternatives_for_stale_chunk:", result)
         self.assertEqual(
             result,
             [
@@ -56,7 +55,6 @@ class FreshAlternativeFinderTests(unittest.TestCase):
             now_ts=self.now_ts,
         )
 
-        print("\nalternatives_for_fresh_chunk:", result)
         self.assertEqual(result, [])
 
 

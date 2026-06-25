@@ -65,6 +65,13 @@ def expected_alternative_pairs(case: dict) -> list[dict]:
     )
 
 
+def expected_conflict_pairs(case: dict) -> list[list[str]]:
+    expected = case.get("expected", {})
+    pairs = expected.get("conflict_pairs", [])
+    normalized = [sorted(pair) for pair in pairs]
+    return sorted(normalized)
+
+
 def evaluate_case(
     case: dict,
     corpus: list[dict],
@@ -93,7 +100,7 @@ def evaluate_case(
     checks = {
         "verdict": actual["verdict"] == expected["verdict"],
         "stale_chunk_ids": actual["stale_chunk_ids"] == sorted(expected.get("stale_chunk_ids", [])),
-        "conflict_pairs": actual["conflict_pairs"] == sorted(expected.get("conflict_pairs", [])),
+        "conflict_pairs": actual["conflict_pairs"] == expected_conflict_pairs(case),
         "fresh_alternatives": actual["fresh_alternatives"] == expected_alternative_pairs(case),
     }
 
@@ -148,13 +155,34 @@ def run_eval(
     }
 
 
+def compact_eval_report(report: dict) -> dict:
+    failed_cases = []
+    for case in report.get("cases", []):
+        if case.get("passed"):
+            continue
+        failed_cases.append(
+            {
+                "name": case["name"],
+                "query": case["query"],
+                "checks": case["checks"],
+                "expected": case["expected"],
+                "actual": case["actual"],
+            }
+        )
+
+    output = {"summary": report["summary"]}
+    if failed_cases:
+        output["failed_cases"] = failed_cases
+    return output
+
+
 def main() -> None:
     default_base = Path("eval_cases") / "kubernetes"
     report = run_eval(
         corpus_path=default_base / "corpus.json",
         cases_path=default_base / "cases.json",
     )
-    print(json.dumps(report, indent=2, ensure_ascii=False))
+    print(json.dumps(compact_eval_report(report), indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

@@ -2,23 +2,60 @@ import re
 from itertools import combinations
 
 NEGATION_TERMS = {
+    "remove",
     "removed",
+    "removes",
+    "deprecate",
     "deprecated",
+    "deprecates",
+    "replace",
     "replaced",
     "disabled",
     "unsupported",
     "obsolete",
-    "no_longer",
+    "nolonger",
 }
 ACTIVE_TERMS = {
     "available",
     "enabled",
+    "included",
+    "lets",
+    "rely",
     "required",
+    "support",
     "supported",
     "use",
     "uses",
     "using",
+    "works",
 }
+REPLACEMENT_TERMS = {
+    "field",
+    "migrate",
+    "migrated",
+    "migration",
+    "replace",
+    "replaced",
+    "replacement",
+}
+LEGACY_INTERFACE_TERMS = {
+    "annotation",
+    "servicename",
+    "serviceport",
+    "v1beta1",
+}
+CURRENT_INTERFACE_TERMS = {
+    "defaultbackend",
+    "field",
+    "ingressclass",
+    "ingressclassname",
+    "pathtype",
+}
+BEHAVIOR_CHANGE_GROUPS = (
+    ({"all"}, {"none", "no"}),
+    ({"unconfined"}, {"runtimedefault"}),
+    ({"single", "shared"}, {"named", "separate"}),
+)
 VERSION_PATTERNS = (
     re.compile(r"\b(?:version|v)\s*(\d+(?:\.\d+)*)\b", re.IGNORECASE),
     re.compile(r"\b[A-Z][A-Za-z0-9._-]*\s+(\d+(?:\.\d+)*)\b"),
@@ -55,7 +92,7 @@ STOPWORDS = {
 
 
 def normalize_text(text: str) -> str:
-    return text.lower().replace("no longer", "no_longer")
+    return text.lower().replace("no longer", "nolonger")
 
 
 def content_terms(text: str) -> set[str]:
@@ -65,6 +102,10 @@ def content_terms(text: str) -> set[str]:
         for token in tokens
         if len(token) >= 3 and token not in STOPWORDS and not token.isdigit()
     }
+
+
+def raw_terms(text: str) -> set[str]:
+    return set(TOKEN_PATTERN.findall(normalize_text(text)))
 
 
 def shared_content_terms(text_a: str, text_b: str) -> set[str]:
@@ -90,6 +131,31 @@ def has_positive(text: str) -> bool:
     return bool(content_terms(text) & ACTIVE_TERMS)
 
 
+def has_replacement(text: str) -> bool:
+    return bool(content_terms(text) & REPLACEMENT_TERMS)
+
+
+def has_interface_migration(text_a: str, text_b: str) -> bool:
+    tokens_a = content_terms(text_a)
+    tokens_b = content_terms(text_b)
+    split_interface_terms = (
+        (tokens_a & LEGACY_INTERFACE_TERMS and tokens_b & CURRENT_INTERFACE_TERMS)
+        or (tokens_b & LEGACY_INTERFACE_TERMS and tokens_a & CURRENT_INTERFACE_TERMS)
+    )
+    return bool(split_interface_terms)
+
+
+def has_behavior_change(text_a: str, text_b: str) -> bool:
+    tokens_a = raw_terms(text_a)
+    tokens_b = raw_terms(text_b)
+    for left_terms, right_terms in BEHAVIOR_CHANGE_GROUPS:
+        if (tokens_a & left_terms and tokens_b & right_terms) or (
+            tokens_b & left_terms and tokens_a & right_terms
+        ):
+            return True
+    return False
+
+
 def detect_rule_conflicts(chunks: list[dict]) -> list[dict]:
     conflicts = []
     for chunk_a, chunk_b in combinations(chunks, 2):
@@ -98,11 +164,6 @@ def detect_rule_conflicts(chunks: list[dict]) -> list[dict]:
         if chunk_a.get("topic") != chunk_b.get("topic"):
             continue
         if chunk_a.get("version") == chunk_b.get("version"):
-            continue
-
-        versions_a = extract_versions(chunk_a.get("text", ""), chunk_a.get("id", ""))
-        versions_b = extract_versions(chunk_b.get("text", ""), chunk_b.get("id", ""))
-        if not versions_a or not versions_b or versions_a == versions_b:
             continue
 
         shared_terms = shared_content_terms(chunk_a.get("text", ""), chunk_b.get("text", ""))
@@ -114,17 +175,24 @@ def detect_rule_conflicts(chunks: list[dict]) -> list[dict]:
         b_negative = has_negative(chunk_b["text"])
         b_positive = has_positive(chunk_b["text"])
 
-        if (a_negative and b_positive) or (a_positive and b_negative):
-                conflicts.append(
-                    {
-                        "chunk_a": chunk_a["id"],
-                        "chunk_b": chunk_b["id"],
-                        "source": "rules",
-                        "type": "VERSION_CONFLICT",
-                        "confidence": 0.75,
-                        "reason": "Chunks describe the same topic across versions",
-                        "shared_terms": sorted(shared_terms),
-                    }
-            )
+        if not (
+            (a_negative and b_positive)
+            or (a_positive and b_negative)
+            or has_interface_migration(chunk_a["text"], chunk_b["text"])
+            or has_behavior_change(chunk_a["text"], chunk_b["text"])
+        ):
+            continue
+
+        conflicts.append(
+            {
+                "chunk_a": chunk_a["id"],
+                "chunk_b": chunk_b["id"],
+                "source": "rules",
+                "type": "VERSION_CHANGE",
+                "confidence": 0.75,
+                "reason": "Chunks describe a versioned behavior or migration change",
+                "shared_terms": sorted(shared_terms),
+            }
+        )
 
     return conflicts

@@ -4,7 +4,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .auditor import audit
-from .eval import run_eval
+from .eval import compact_eval_report, run_eval
 
 
 def _load_chunks(path: str | None) -> list[dict] | None:
@@ -53,7 +53,7 @@ def main() -> None:
             use_nli=args.use_nli,
             block_on_conflict=args.block_on_conflict,
         )
-        print(json.dumps(report, indent=2, ensure_ascii=False))
+        print(json.dumps(compact_eval_report(report), indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

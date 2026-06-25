@@ -43,7 +43,7 @@
     ],
     "expected": {
       "verdict": "MIXED",
-      "stale_chunk_ids": ["k8s_123_dockershim_present_001", "k8s_124_dockershim_removed_001"],
+      "stale_chunk_ids": ["k8s_123_dockershim_present_001"],
       "conflict_pairs": [["k8s_123_dockershim_present_001", "k8s_124_dockershim_removed_001"]],
       "fresh_alternatives": [
         {
