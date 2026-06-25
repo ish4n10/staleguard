@@ -4,6 +4,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .auditor import audit
+from .eval import run_eval
 
 
 def _load_chunks(path: str | None) -> list[dict] | None:
@@ -24,6 +25,16 @@ def build_parser() -> argparse.ArgumentParser:
     audit_parser.add_argument("--query", required=True, help="User query to audit against.")
     audit_parser.add_argument("--retrieved", required=True, help="Path to retrieved chunks JSON.")
     audit_parser.add_argument("--corpus", help="Optional path to full corpus JSON.")
+
+    eval_parser = subparsers.add_parser("eval", help="Run labeled eval cases.")
+    eval_parser.add_argument("--corpus", required=True, help="Path to corpus JSON.")
+    eval_parser.add_argument("--cases", required=True, help="Path to eval cases JSON.")
+    eval_parser.add_argument("--use-nli", action="store_true", help="Enable NLI during eval.")
+    eval_parser.add_argument(
+        "--block-on-conflict",
+        action="store_true",
+        help="Treat mixed stale+conflict cases as conflicted.",
+    )
     return parser
 
 
@@ -35,6 +46,14 @@ def main() -> None:
         corpus = _load_chunks(args.corpus)
         result = audit(args.query, retrieved_chunks, corpus)
         print(json.dumps(asdict(result), indent=2))
+    elif args.command == "eval":
+        report = run_eval(
+            corpus_path=args.corpus,
+            cases_path=args.cases,
+            use_nli=args.use_nli,
+            block_on_conflict=args.block_on_conflict,
+        )
+        print(json.dumps(report, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

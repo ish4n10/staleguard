@@ -1,0 +1,179 @@
+[
+  {
+    "name": "psp_removed_conflict",
+    "query": "Can I still use PodSecurityPolicy in Kubernetes 1.25?",
+    "retrieved_ids": [
+      "k8s_121_psp_deprecated_001",
+      "k8s_125_psp_removed_001",
+      "k8s_125_psa_001"
+    ],
+    "expected": {
+      "verdict": "MIXED",
+      "stale_chunk_ids": ["k8s_121_psp_deprecated_001"],
+      "conflict_pairs": [["k8s_121_psp_deprecated_001", "k8s_125_psp_removed_001"]],
+      "fresh_alternatives": [
+        {
+          "instead_of": "k8s_121_psp_deprecated_001",
+          "use": "k8s_125_psp_removed_001"
+        }
+      ]
+    }
+  },
+  {
+    "name": "psa_current_only",
+    "query": "How do I enforce pod security standards in a modern Kubernetes cluster?",
+    "retrieved_ids": [
+      "k8s_125_psa_001",
+      "k8s_136_rbac_practices_001"
+    ],
+    "expected": {
+      "verdict": "FRESH",
+      "stale_chunk_ids": [],
+      "conflict_pairs": [],
+      "fresh_alternatives": []
+    }
+  },
+  {
+    "name": "dockershim_removed_conflict",
+    "query": "Can Kubernetes still rely on dockershim for Docker Engine integration?",
+    "retrieved_ids": [
+      "k8s_123_dockershim_present_001",
+      "k8s_124_dockershim_removed_001",
+      "k8s_136_cri_required_001"
+    ],
+    "expected": {
+      "verdict": "MIXED",
+      "stale_chunk_ids": ["k8s_123_dockershim_present_001", "k8s_124_dockershim_removed_001"],
+      "conflict_pairs": [["k8s_123_dockershim_present_001", "k8s_124_dockershim_removed_001"]],
+      "fresh_alternatives": [
+        {
+          "instead_of": "k8s_123_dockershim_present_001",
+          "use": "k8s_136_cri_required_001"
+        }
+      ]
+    }
+  },
+  {
+    "name": "ingress_annotation_to_class",
+    "query": "How should I select the ingress controller for a new Ingress resource?",
+    "retrieved_ids": [
+      "k8s_118_ingress_annotation_001",
+      "k8s_136_ingress_class_field_001",
+      "k8s_136_ingress_default_class_001"
+    ],
+    "expected": {
+      "verdict": "MIXED",
+      "stale_chunk_ids": ["k8s_118_ingress_annotation_001"],
+      "conflict_pairs": [["k8s_118_ingress_annotation_001", "k8s_136_ingress_class_field_001"]],
+      "fresh_alternatives": [
+        {
+          "instead_of": "k8s_118_ingress_annotation_001",
+          "use": "k8s_136_ingress_class_field_001"
+        }
+      ]
+    }
+  },
+  {
+    "name": "ingress_defaulting_current",
+    "query": "What happens if an Ingress omits ingressClassName?",
+    "retrieved_ids": [
+      "k8s_136_ingress_default_class_001",
+      "k8s_136_ingress_multiple_defaults_001"
+    ],
+    "expected": {
+      "verdict": "FRESH",
+      "stale_chunk_ids": [],
+      "conflict_pairs": [],
+      "fresh_alternatives": []
+    }
+  },
+  {
+    "name": "ingress_v1beta1_migration",
+    "query": "Can I still apply a v1beta1 Ingress manifest without pathType?",
+    "retrieved_ids": [
+      "k8s_122_ingress_v1beta1_001",
+      "k8s_122_ingress_v1_required_001"
+    ],
+    "expected": {
+      "verdict": "MIXED",
+      "stale_chunk_ids": ["k8s_122_ingress_v1beta1_001"],
+      "conflict_pairs": [["k8s_122_ingress_v1beta1_001", "k8s_122_ingress_v1_required_001"]],
+      "fresh_alternatives": [
+        {
+          "instead_of": "k8s_122_ingress_v1beta1_001",
+          "use": "k8s_122_ingress_v1_required_001"
+        }
+      ]
+    }
+  },
+  {
+    "name": "pdb_selector_semantics_conflict",
+    "query": "What does an empty PodDisruptionBudget selector match?",
+    "retrieved_ids": [
+      "k8s_121_pdb_selector_none_001",
+      "k8s_125_pdb_selector_allpods_001"
+    ],
+    "expected": {
+      "verdict": "MIXED",
+      "stale_chunk_ids": ["k8s_121_pdb_selector_none_001"],
+      "conflict_pairs": [["k8s_121_pdb_selector_none_001", "k8s_125_pdb_selector_allpods_001"]],
+      "fresh_alternatives": [
+        {
+          "instead_of": "k8s_121_pdb_selector_none_001",
+          "use": "k8s_125_pdb_selector_allpods_001"
+        }
+      ]
+    }
+  },
+  {
+    "name": "seccomp_defaulting_conditions",
+    "query": "How does seccompDefault change the default seccomp profile for Pods?",
+    "retrieved_ids": [
+      "k8s_136_seccomp_unconfined_001",
+      "k8s_136_seccomp_runtime_default_001",
+      "k8s_136_seccomp_rollout_001"
+    ],
+    "expected": {
+      "verdict": "FRESH",
+      "stale_chunk_ids": [],
+      "conflict_pairs": [],
+      "fresh_alternatives": []
+    }
+  },
+  {
+    "name": "unrelated_current_chunks",
+    "query": "Tell me about Kubernetes ingress and container runtime setup.",
+    "retrieved_ids": [
+      "k8s_136_ingress_tls_001",
+      "k8s_136_cri_required_001",
+      "k8s_136_rbac_practices_001"
+    ],
+    "expected": {
+      "verdict": "FRESH",
+      "stale_chunk_ids": [],
+      "conflict_pairs": [],
+      "fresh_alternatives": []
+    }
+  },
+  {
+    "name": "mixed_security_upgrade_bundle",
+    "query": "How should I upgrade security settings from an older Kubernetes cluster to a current one?",
+    "retrieved_ids": [
+      "k8s_121_psp_deprecated_001",
+      "k8s_125_psa_001",
+      "k8s_136_seccomp_runtime_default_001",
+      "k8s_136_seccomp_rollout_001"
+    ],
+    "expected": {
+      "verdict": "STALE",
+      "stale_chunk_ids": ["k8s_121_psp_deprecated_001"],
+      "conflict_pairs": [],
+      "fresh_alternatives": [
+        {
+          "instead_of": "k8s_121_psp_deprecated_001",
+          "use": "k8s_125_psp_removed_001"
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,254 @@
+[
+  {
+    "id": "k8s_121_psp_deprecated_001",
+    "text": "Kubernetes v1.21 still lets operators use PodSecurityPolicy, but the feature is deprecated and clusters should plan a migration away from it.",
+    "topic": "pod_security_policy",
+    "product": "kubernetes",
+    "version": "1.21",
+    "date_ts": 1625097600,
+    "source": "kubernetes-pod-security-policy-v1.21",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "1.25",
+      "source_url": "https://kubernetes.io/docs/concepts/security/pod-security-policy/"
+    }
+  },
+  {
+    "id": "k8s_125_psp_removed_001",
+    "text": "Kubernetes v1.25 removes PodSecurityPolicy from the project and no longer serves the PodSecurityPolicy API. Operators should stop depending on PSP in upgraded clusters.",
+    "topic": "pod_security_policy",
+    "product": "kubernetes",
+    "version": "1.25",
+    "date_ts": 1661990400,
+    "source": "kubernetes-pod-security-policy-v1.25",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/concepts/security/pod-security-policy/"
+    }
+  },
+  {
+    "id": "k8s_125_psa_001",
+    "text": "Kubernetes v1.25 provides Pod Security Admission as a built-in stable admission controller that enforces Pod Security Standards at the namespace level.",
+    "topic": "pod_security_admission",
+    "product": "kubernetes",
+    "version": "1.25",
+    "date_ts": 1661990400,
+    "source": "kubernetes-pod-security-admission-v1.25",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/concepts/security/pod-security-admission/"
+    }
+  },
+  {
+    "id": "k8s_123_dockershim_present_001",
+    "text": "Kubernetes releases before v1.24 included a direct Docker Engine integration through a component named dockershim, so clusters could rely on that built-in path.",
+    "topic": "container_runtime",
+    "product": "kubernetes",
+    "version": "1.23",
+    "date_ts": 1640995200,
+    "source": "kubernetes-container-runtimes-v1.23",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "1.24",
+      "source_url": "https://kubernetes.io/docs/setup/production-environment/container-runtimes/"
+    }
+  },
+  {
+    "id": "k8s_124_dockershim_removed_001",
+    "text": "Starting in Kubernetes v1.24, dockershim is no longer part of Kubernetes. Nodes must use a CRI-compatible runtime path instead of relying on the old built-in Docker shim.",
+    "topic": "container_runtime",
+    "product": "kubernetes",
+    "version": "1.24",
+    "date_ts": 1651363200,
+    "source": "kubernetes-container-runtimes-v1.24",
+    "metadata": {
+      "status": "aging",
+      "source_url": "https://kubernetes.io/docs/setup/production-environment/container-runtimes/"
+    }
+  },
+  {
+    "id": "k8s_136_cri_required_001",
+    "text": "Kubernetes v1.36 requires a runtime that conforms to the Container Runtime Interface, such as containerd or CRI-O, for nodes to run Pods.",
+    "topic": "container_runtime",
+    "product": "kubernetes",
+    "version": "1.36",
+    "date_ts": 1782864000,
+    "source": "kubernetes-container-runtimes-v1.36",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/setup/production-environment/container-runtimes/"
+    }
+  },
+  {
+    "id": "k8s_118_ingress_annotation_001",
+    "text": "Before Kubernetes 1.18 added IngressClass resources and the ingressClassName field, the supported way many controllers used to select an Ingress class was the kubernetes.io/ingress.class annotation on each Ingress.",
+    "topic": "ingress_class_selection",
+    "product": "kubernetes",
+    "version": "1.18",
+    "date_ts": 1593561600,
+    "source": "kubernetes-ingress-annotation-v1.18",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "1.36",
+      "source_url": "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+    }
+  },
+  {
+    "id": "k8s_136_ingress_class_field_001",
+    "text": "Current Kubernetes guidance says an Ingress should specify a class by referencing an IngressClass resource through ingressClassName. This field has replaced the old annotation approach and carries additional class configuration.",
+    "topic": "ingress_class_selection",
+    "product": "kubernetes",
+    "version": "1.36",
+    "date_ts": 1782864000,
+    "source": "kubernetes-ingress-class-field-v1.36",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+    }
+  },
+  {
+    "id": "k8s_136_ingress_default_class_001",
+    "text": "If an Ingress omits ingressClassName, Kubernetes expects a default IngressClass to be defined so the cluster can assign the new Ingress to that class automatically.",
+    "topic": "ingress_defaulting",
+    "product": "kubernetes",
+    "version": "1.36",
+    "date_ts": 1782864000,
+    "source": "kubernetes-ingress-default-class-v1.36",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+    }
+  },
+  {
+    "id": "k8s_136_ingress_multiple_defaults_001",
+    "text": "If more than one IngressClass is marked as the cluster default, the admission controller blocks creation of new Ingress objects that omit ingressClassName until only one default remains.",
+    "topic": "ingress_defaulting",
+    "product": "kubernetes",
+    "version": "1.36",
+    "date_ts": 1782864000,
+    "source": "kubernetes-ingress-multiple-defaults-v1.36",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+    }
+  },
+  {
+    "id": "k8s_122_ingress_v1beta1_001",
+    "text": "Older Kubernetes Ingress manifests commonly used the supported v1beta1 API shape with fields like spec.backend and serviceName or servicePort. That manifest style predates the required v1 path model.",
+    "topic": "ingress_api_migration",
+    "product": "kubernetes",
+    "version": "1.21",
+    "date_ts": 1625097600,
+    "source": "kubernetes-ingress-v1beta1-v1.21",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "1.22",
+      "source_url": "https://kubernetes.io/docs/reference/using-api/deprecation-guide/"
+    }
+  },
+  {
+    "id": "k8s_122_ingress_v1_required_001",
+    "text": "As of Kubernetes v1.22, the extensions or networking v1beta1 Ingress APIs are no longer served. Clusters should use networking.k8s.io/v1, rename backend fields, and set pathType on every path.",
+    "topic": "ingress_api_migration",
+    "product": "kubernetes",
+    "version": "1.22",
+    "date_ts": 1633046400,
+    "source": "kubernetes-ingress-v1-migration-v1.22",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/reference/using-api/deprecation-guide/"
+    }
+  },
+  {
+    "id": "k8s_121_pdb_selector_none_001",
+    "text": "In the older policy v1beta1 PodDisruptionBudget behavior, an empty spec.selector matched no Pods in the namespace.",
+    "topic": "pod_disruption_budget_selector",
+    "product": "kubernetes",
+    "version": "1.21",
+    "date_ts": 1625097600,
+    "source": "kubernetes-pdb-selector-v1beta1-v1.21",
+    "metadata": {
+      "status": "superseded",
+      "superseded_by": "1.25",
+      "source_url": "https://kubernetes.io/docs/reference/using-api/deprecation-guide/"
+    }
+  },
+  {
+    "id": "k8s_125_pdb_selector_allpods_001",
+    "text": "In policy v1 PodDisruptionBudget behavior, an empty spec.selector means all Pods in the namespace are selected, while an unset selector still matches none.",
+    "topic": "pod_disruption_budget_selector",
+    "product": "kubernetes",
+    "version": "1.25",
+    "date_ts": 1661990400,
+    "source": "kubernetes-pdb-selector-v1-v1.25",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/reference/using-api/deprecation-guide/"
+    }
+  },
+  {
+    "id": "k8s_136_seccomp_unconfined_001",
+    "text": "If seccompDefault is not enabled on a node, Pods that do not set their own seccomp profile default to Unconfined.",
+    "topic": "seccomp_defaulting",
+    "product": "kubernetes",
+    "version": "1.36",
+    "date_ts": 1782864000,
+    "source": "kubernetes-seccomp-unconfined-v1.36",
+    "metadata": {
+      "status": "aging",
+      "source_url": "https://kubernetes.io/docs/tutorials/security/seccomp/"
+    }
+  },
+  {
+    "id": "k8s_136_seccomp_runtime_default_001",
+    "text": "When seccompDefault is enabled, Pods without an explicit seccomp profile use RuntimeDefault instead of Unconfined.",
+    "topic": "seccomp_defaulting",
+    "product": "kubernetes",
+    "version": "1.36",
+    "date_ts": 1782864000,
+    "source": "kubernetes-seccomp-runtime-default-v1.36",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/tutorials/security/seccomp/"
+    }
+  },
+  {
+    "id": "k8s_136_seccomp_rollout_001",
+    "text": "Kubernetes recommends enabling seccompDefault on a subset of nodes first and testing workloads before rolling the feature out across the entire cluster.",
+    "topic": "seccomp_rollout",
+    "product": "kubernetes",
+    "version": "1.36",
+    "date_ts": 1782864000,
+    "source": "kubernetes-seccomp-rollout-v1.36",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/tutorials/security/seccomp/"
+    }
+  },
+  {
+    "id": "k8s_136_ingress_tls_001",
+    "text": "Ingress TLS configuration in Kubernetes uses a Secret containing tls.crt and tls.key, and the Ingress resource assumes TLS termination at the ingress point.",
+    "topic": "ingress_tls",
+    "product": "kubernetes",
+    "version": "1.36",
+    "date_ts": 1782864000,
+    "source": "kubernetes-ingress-tls-v1.36",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+    }
+  },
+  {
+    "id": "k8s_136_rbac_practices_001",
+    "text": "Current Kubernetes security guidance includes RBAC good practices for controlling API access and limiting privileges.",
+    "topic": "rbac_security",
+    "product": "kubernetes",
+    "version": "1.36",
+    "date_ts": 1782864000,
+    "source": "kubernetes-rbac-good-practices-v1.36",
+    "metadata": {
+      "status": "current",
+      "source_url": "https://kubernetes.io/docs/concepts/security/pod-security-admission/"
+    }
+  }
+]
