@@ -1,3 +1,4 @@
+from ..config import StaleGuardConfig
 from ..scorers.freshness import find_superseding_chunk, score_chunk_freshness
 
 
@@ -5,6 +6,7 @@ def find_fresh_alternatives(
     retrieved_chunks: list[dict],
     corpus: list[dict] | None,
     query: str,
+    config: StaleGuardConfig | None = None,
     now_ts: int | None = None,
 ) -> list[dict]:
     if not corpus:
@@ -12,11 +14,11 @@ def find_fresh_alternatives(
 
     alternatives = []
     for chunk in retrieved_chunks:
-        freshness = score_chunk_freshness(chunk, query, corpus, now_ts)
+        freshness = score_chunk_freshness(chunk, query, corpus, config=config, now_ts=now_ts)
         if freshness["verdict"] != "STALE":
             continue
 
-        replacement = find_superseding_chunk(chunk, corpus)
+        replacement = find_superseding_chunk(chunk, corpus, config=config)
         if not replacement:
             continue
 

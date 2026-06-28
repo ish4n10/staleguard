@@ -7,6 +7,7 @@ from typing import Any
 class StaleGuardConfig:
     use_nli: bool = False
     block_on_conflict: bool = False
+    require_nli: bool = False
 
     embedding_backend: str = "local"
     embedding_model: str = "all-MiniLM-L6-v2"
@@ -19,6 +20,9 @@ class StaleGuardConfig:
     conflict_options: dict[str, Any] = field(default_factory=dict)
 
     similarity_threshold: float = 0.40
+    candidate_match_threshold: float = 0.58
+    semantic_match_threshold: float = 0.72
+    min_shared_terms: int = 2
     contradiction_threshold: float = 0.80
     contradiction_margin: float = 0.15
 

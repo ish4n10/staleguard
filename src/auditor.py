@@ -1,14 +1,16 @@
 from collections.abc import Mapping
+from itertools import combinations
+
 from .adapters.chroma import normalize_chroma_result
 from .adapters.langchain import normalize_langchain_docs
 from .alternatives.finder import find_fresh_alternatives
-from .config import StaleGuardConfig
 from .audit_types import AuditResult
+from .config import StaleGuardConfig
 from .conflicts.rules import detect_rule_conflicts
-from .scorers.freshness import score_chunk_freshness
 from .conflicts.nli import score_chunk_pair
+from .matching import match_chunk_pair
 from .schema import prepare_chunks
-from itertools import combinations
+from .scorers.freshness import score_chunk_freshness
 
 
 def build_provenance_card(
@@ -18,16 +20,25 @@ def build_provenance_card(
     stale_chunks: list[dict],
     fresh_alternatives: list[dict],
     conflicts: list[dict],
+    freshness_results: list[dict] | None = None,
+    capabilities: dict | None = None,
 ) -> dict:
-    recommendation = _recommendation(stale_chunks, fresh_alternatives, conflicts)
+    freshness_results = freshness_results or []
+    capabilities = capabilities or {}
+    recommendation = _recommendation(stale_chunks, fresh_alternatives, conflicts, capabilities)
     schema_issues = collect_schema_issues(retrieved_chunks)
     return {
         "verdict": verdict,
         "confidence": confidence,
+        "confidence_model": {
+            "type": "heuristic_evidence",
+            "calibrated": False,
+        },
         "total_chunks_checked": len(retrieved_chunks),
         "stale_count": len(stale_chunks),
         "conflict_count": len(conflicts),
         "used_chunks": [chunk.get("id") for chunk in retrieved_chunks],
+        "capabilities": capabilities,
         "schema_summary": {
             "chunks_with_schema_issues": len(schema_issues),
             "chunks_with_inferred_fields": sum(1 for issue in schema_issues if issue["inferred_fields"]),
@@ -39,6 +50,7 @@ def build_provenance_card(
             ),
         },
         "schema_issues": schema_issues,
+        "freshness_results": freshness_results,
         "stale_chunks": stale_chunks,
         "fresh_alternatives": fresh_alternatives,
         "conflicts": conflicts,
@@ -72,27 +84,62 @@ def collect_schema_issues(chunks: list[dict]) -> list[dict]:
 def collect_nli_conflicts(
     chunks: list[dict],
     config: StaleGuardConfig | None = None,
-) -> list[dict]:
+) -> tuple[list[dict], dict]:
+    config = config or StaleGuardConfig()
     conflicts = []
+    capability = {
+        "enabled": True,
+        "available": True,
+        "required": config.require_nli,
+        "status": "ready",
+        "reason": None,
+    }
 
     try:
         for chunk_a, chunk_b in combinations(chunks, 2):
-            if chunk_a.get("product") != chunk_b.get("product"):
-                continue
-            if chunk_a.get("topic") != chunk_b.get("topic"):
-                continue
             if chunk_a.get("version") == chunk_b.get("version"):
                 continue
 
+            pair_match = match_chunk_pair(
+                chunk_a,
+                chunk_b,
+                config=config,
+                semantic_fallback=True,
+            )
+            if not pair_match["matched"]:
+                continue
+
             result = score_chunk_pair(chunk_a, chunk_b, config=config)
+            result["match_reason"] = pair_match["reason"]
+            result["match_score"] = pair_match["score"]
             if result["is_conflict"]:
                 conflicts.append(result)
     except ModuleNotFoundError as exc:
         if exc.name == "sentence_transformers":
-            return []
+            capability.update(
+                {
+                    "available": False,
+                    "status": "missing_dependency",
+                    "reason": "sentence_transformers is unavailable",
+                }
+            )
+            return [], capability
         raise
 
-    return conflicts
+    return conflicts, capability
+
+
+def default_capabilities(config: StaleGuardConfig) -> dict:
+    nli_enabled = bool(config.use_nli)
+    return {
+        "nli": {
+            "enabled": nli_enabled,
+            "available": nli_enabled,
+            "required": config.require_nli,
+            "status": "ready" if nli_enabled else "disabled",
+            "reason": None if nli_enabled else "config_disabled",
+        }
+    }
         
 def merge_conflicts(rule_conflicts, nli_conflicts) -> list[dict]:
     merged: dict[tuple[str, str], dict] = {}
@@ -159,45 +206,64 @@ def audit(
         block_on_conflict=block_on_conflict,
     )
 
-    if config is not None:
-        use_nli = config.use_nli
-        block_on_conflict = config.block_on_conflict
+    use_nli = effective_config.use_nli
+    block_on_conflict = effective_config.block_on_conflict
 
     prepared_retrieved = prepare_chunks(retrieved_chunks)
     prepared_corpus = prepare_chunks(corpus)
 
+    freshness_results = [
+        score_chunk_freshness(
+            chunk,
+            query,
+            prepared_corpus,
+            config=effective_config,
+        )
+        for chunk in prepared_retrieved
+    ]
     stale_chunks = [
         result
-        for result in (
-            score_chunk_freshness(chunk, query, prepared_corpus)
-            for chunk in prepared_retrieved
-        )
+        for result in freshness_results
         if result["verdict"] == "STALE"
     ]
-    fresh_alternatives = find_fresh_alternatives(prepared_retrieved, prepared_corpus, query)
-    rule_conflicts = detect_rule_conflicts(prepared_retrieved)
+    fresh_alternatives = find_fresh_alternatives(
+        prepared_retrieved,
+        prepared_corpus,
+        query,
+        config=effective_config,
+    )
+    rule_conflicts = detect_rule_conflicts(prepared_retrieved, config=effective_config)
 
+    capabilities = default_capabilities(effective_config)
 
     if use_nli:
-        nli_conflicts = collect_nli_conflicts(prepared_retrieved, config=effective_config)
+        nli_conflicts, nli_capability = collect_nli_conflicts(
+            prepared_retrieved,
+            config=effective_config,
+        )
+        capabilities["nli"] = nli_capability
         conflicts = merge_conflicts(rule_conflicts, nli_conflicts)
-
-    else: 
+    else:
         conflicts = rule_conflicts
-        
+
     verdict, confidence = _verdict_and_confidence(
         prepared_retrieved,
+        freshness_results,
         stale_chunks,
         conflicts,
+        capabilities,
+        effective_config,
         block_on_conflict=block_on_conflict,
     )
     provenance = build_provenance_card(
         verdict=verdict,
         confidence=confidence,
         retrieved_chunks=prepared_retrieved,
+        freshness_results=freshness_results,
         stale_chunks=stale_chunks,
         fresh_alternatives=fresh_alternatives,
         conflicts=conflicts,
+        capabilities=capabilities,
     )
 
     return AuditResult(
@@ -307,7 +373,13 @@ def _recommendation(
     stale_chunks: list[dict],
     fresh_alternatives: list[dict],
     conflicts: list[dict],
+    capabilities: dict,
 ) -> str:
+    nli_capability = capabilities.get("nli", {})
+    if nli_capability.get("required") and not nli_capability.get("available", True):
+        return "Block generation until the required NLI capability is restored."
+    if nli_capability.get("enabled") and not nli_capability.get("available", True):
+        return "Proceed with caution: NLI capability is unavailable and only rule-based conflict checks ran."
     if conflicts:
         return "Block generation or ask user to resolve conflicting chunks."
     if stale_chunks and fresh_alternatives:
@@ -319,14 +391,23 @@ def _recommendation(
 
 def _verdict_and_confidence(
     retrieved_chunks: list[dict],
+    freshness_results: list[dict],
     stale_chunks: list[dict],
     conflicts: list[dict],
+    capabilities: dict,
+    config: StaleGuardConfig,
     block_on_conflict: bool = False,
 ) -> tuple[str, float]:
+    nli_capability = capabilities.get("nli", {})
+    if config.require_nli and config.use_nli and not nli_capability.get("available", True):
+        return "UNKNOWN", 0.0
     if any(chunk.get("metadata", {}).get("staleguard_missing_required") for chunk in retrieved_chunks):
         return "UNKNOWN", 0.0
     if conflicts and stale_chunks:
-        confidence = min(0.98, max(_stale_confidence(stale_chunks), _conflict_confidence(conflicts)) + 0.05)
+        confidence = min(
+            0.98,
+            max(_stale_confidence(stale_chunks), _conflict_confidence(conflicts)) + 0.05,
+        )
         if block_on_conflict:
             return "CONFLICTED", confidence
         return "MIXED", confidence
@@ -338,10 +419,17 @@ def _verdict_and_confidence(
         chunk.get("metadata", {}).get("staleguard_missing_audit_fields")
         for chunk in retrieved_chunks
     ):
-        return "UNKNOWN", 0.4
+        return "UNKNOWN", round(min(0.6, _freshness_confidence(freshness_results)), 3)
     if retrieved_chunks:
-        return "FRESH", 0.85
+        return "FRESH", _freshness_confidence(freshness_results)
     return "UNKNOWN", 0.0
+
+
+def _freshness_confidence(freshness_results: list[dict]) -> float:
+    if not freshness_results:
+        return 0.0
+    scores = [result.get("confidence", 0.5) or 0.5 for result in freshness_results]
+    return round(sum(scores) / len(scores), 3)
 
 
 def _stale_confidence(stale_chunks: list[dict]) -> float:

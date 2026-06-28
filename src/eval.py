@@ -3,7 +3,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .audit_types import AuditResult
-from .auditor import audit
+from .auditor import audit, audit_retrieved
 from .config import StaleGuardConfig
 
 
@@ -25,7 +25,10 @@ def build_corpus_index(corpus: list[dict]) -> dict[str, dict]:
     return {chunk["id"]: chunk for chunk in corpus}
 
 
-def materialize_retrieved(case: dict, corpus_index: dict[str, dict]) -> list[dict]:
+def materialize_retrieved(case: dict, corpus_index: dict[str, dict]) -> object:
+    if "retrieved" in case:
+        return case["retrieved"]
+
     missing_ids = [chunk_id for chunk_id in case["retrieved_ids"] if chunk_id not in corpus_index]
     if missing_ids:
         missing = ", ".join(missing_ids)
@@ -81,14 +84,24 @@ def evaluate_case(
 ) -> dict:
     corpus_index = build_corpus_index(corpus)
     retrieved = materialize_retrieved(case, corpus_index)
-    result = audit(
-        query=case["query"],
-        retrieved_chunks=retrieved,
-        corpus=corpus,
-        use_nli=use_nli,
-        block_on_conflict=block_on_conflict,
-        config=config,
-    )
+    if isinstance(retrieved, list) and all(isinstance(item, dict) and "text" in item for item in retrieved):
+        result = audit(
+            query=case["query"],
+            retrieved_chunks=retrieved,
+            corpus=corpus,
+            use_nli=use_nli,
+            block_on_conflict=block_on_conflict,
+            config=config,
+        )
+    else:
+        result = audit_retrieved(
+            query=case["query"],
+            retrieved=retrieved,
+            corpus=corpus,
+            use_nli=use_nli,
+            block_on_conflict=block_on_conflict,
+            config=config,
+        )
 
     expected = case["expected"]
     actual = {

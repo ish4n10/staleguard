@@ -3,6 +3,9 @@ import re
 from datetime import datetime
 from typing import Any
 
+from ..config import StaleGuardConfig
+from ..matching import match_chunk_pair
+
 SECONDS_PER_MONTH = 30 * 24 * 60 * 60
 VERSION_PATTERN = re.compile(r"\b(\d+(?:\.\d+)*)\b")
 Chunk = dict[str, Any]
@@ -38,7 +41,11 @@ def is_newer_version(candidate: Chunk, chunk: Chunk) -> bool:
     return candidate.get("date_ts", 0) > chunk.get("date_ts", 0)
 
 
-def find_superseding_chunk(chunk: Chunk, corpus: list[Chunk] | None) -> Chunk | None:
+def find_superseding_chunk(
+    chunk: Chunk,
+    corpus: list[Chunk] | None,
+    config: StaleGuardConfig | None = None,
+) -> Chunk | None:
     if not corpus:
         return None
 
@@ -46,9 +53,13 @@ def find_superseding_chunk(chunk: Chunk, corpus: list[Chunk] | None) -> Chunk | 
         candidate
         for candidate in corpus
         if candidate.get("id") != chunk.get("id")
-        and candidate.get("product") == chunk.get("product")
-        and candidate.get("topic") == chunk.get("topic")
         and is_newer_version(candidate, chunk)
+        and match_chunk_pair(
+            chunk,
+            candidate,
+            config=config,
+            strict_topic=True,
+        )["matched"]
     ]
     if not candidates:
         return None
@@ -66,6 +77,7 @@ def score_chunk_freshness(
     chunk: Chunk,
     query: str,
     corpus: list[Chunk] | None = None,
+    config: StaleGuardConfig | None = None,
     now_ts: int | None = None,
     decay_rate: float = 0.05,
 ) -> dict[str, Any]:
@@ -130,7 +142,7 @@ def score_chunk_freshness(
         )
 
     freshness = round(temporal_score(chunk_date_ts, now_ts, decay_rate), 3)
-    newer_chunk = find_superseding_chunk(chunk, corpus)
+    newer_chunk = find_superseding_chunk(chunk, corpus, config=config)
 
     if newer_chunk:
         return _result(

@@ -1,6 +1,9 @@
 import re
 from itertools import combinations
 
+from ..config import StaleGuardConfig
+from ..matching import match_chunk_pair
+
 NEGATION_TERMS = {
     "remove",
     "removed",
@@ -138,11 +141,11 @@ def has_replacement(text: str) -> bool:
 def has_interface_migration(text_a: str, text_b: str) -> bool:
     tokens_a = content_terms(text_a)
     tokens_b = content_terms(text_b)
-    split_interface_terms = (
-        (tokens_a & LEGACY_INTERFACE_TERMS and tokens_b & CURRENT_INTERFACE_TERMS)
-        or (tokens_b & LEGACY_INTERFACE_TERMS and tokens_a & CURRENT_INTERFACE_TERMS)
-    )
-    return bool(split_interface_terms)
+    if tokens_a & LEGACY_INTERFACE_TERMS and tokens_b & CURRENT_INTERFACE_TERMS:
+        return has_replacement(text_b)
+    if tokens_b & LEGACY_INTERFACE_TERMS and tokens_a & CURRENT_INTERFACE_TERMS:
+        return has_replacement(text_a)
+    return False
 
 
 def has_behavior_change(text_a: str, text_b: str) -> bool:
@@ -156,29 +159,39 @@ def has_behavior_change(text_a: str, text_b: str) -> bool:
     return False
 
 
-def detect_rule_conflicts(chunks: list[dict]) -> list[dict]:
+def rule_confidence(shared_terms: set[str], pair_match: dict) -> float:
+    term_bonus = min(0.2, 0.04 * len(shared_terms))
+    metadata_bonus = 0.15 * pair_match["score"]
+    return round(min(0.92, 0.4 + term_bonus + metadata_bonus), 3)
+
+
+def detect_rule_conflicts(
+    chunks: list[dict],
+    config: StaleGuardConfig | None = None,
+) -> list[dict]:
     conflicts = []
     for chunk_a, chunk_b in combinations(chunks, 2):
-        if chunk_a.get("product") != chunk_b.get("product"):
-            continue
-        if chunk_a.get("topic") != chunk_b.get("topic"):
-            continue
         if chunk_a.get("version") == chunk_b.get("version"):
             continue
 
-        shared_terms = shared_content_terms(chunk_a.get("text", ""), chunk_b.get("text", ""))
-        if not shared_terms:
+        pair_match = match_chunk_pair(chunk_a, chunk_b, config=config)
+        shared_terms = set(pair_match["shared_terms"]) or shared_content_terms(
+            chunk_a.get("text", ""),
+            chunk_b.get("text", ""),
+        )
+        if not pair_match["matched"] or not shared_terms:
             continue
 
         a_negative = has_negative(chunk_a["text"])
         a_positive = has_positive(chunk_a["text"])
         b_negative = has_negative(chunk_b["text"])
         b_positive = has_positive(chunk_b["text"])
+        interface_migration = has_interface_migration(chunk_a["text"], chunk_b["text"])
 
         if not (
             (a_negative and b_positive)
             or (a_positive and b_negative)
-            or has_interface_migration(chunk_a["text"], chunk_b["text"])
+            or interface_migration
             or has_behavior_change(chunk_a["text"], chunk_b["text"])
         ):
             continue
@@ -189,9 +202,11 @@ def detect_rule_conflicts(chunks: list[dict]) -> list[dict]:
                 "chunk_b": chunk_b["id"],
                 "source": "rules",
                 "type": "VERSION_CHANGE",
-                "confidence": 0.75,
+                "confidence": rule_confidence(shared_terms, pair_match),
                 "reason": "Chunks describe a versioned behavior or migration change",
                 "shared_terms": sorted(shared_terms),
+                "match_reason": pair_match["reason"],
+                "match_score": pair_match["score"],
             }
         )
 
