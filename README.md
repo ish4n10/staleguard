@@ -44,14 +44,69 @@ That means:
 
 ## Core API
 
-There are two main ways to use the library.
+The main public API is `StaleGuard`.
 
-### 1. Audit already-normalized chunks
+Use it when you want one stable entrypoint regardless of whether your retrieval comes from:
+
+- already-normalized chunk dicts
+- raw Chroma query results
+- LangChain-style documents
+- custom embedding / conflict providers
+
+### 1. Default local setup
 
 ```python
-from src import audit
+from src import StaleGuard
 
-result = audit(
+guard = StaleGuard(
+    use_nli=True,
+    block_on_conflict=False,
+    embedding_model="all-MiniLM-L6-v2",
+    conflict_model="cross-encoder/nli-deberta-v3-base",
+    similarity_threshold=0.40,
+    contradiction_threshold=0.80,
+    contradiction_margin=0.15,
+    cache_dir=".cache/huggingface",
+)
+
+result = guard.audit(
+    query="How do I configure Redis Cluster in Redis 8?",
+    retrieved=retriever_output,
+    corpus=corpus,
+)
+
+print(result.verdict)
+print(result.conflicts)
+print(result.fresh_alternatives)
+print(result.provenance)
+```
+
+### 2. Use custom or hosted providers behind the same API
+
+```python
+from src import StaleGuard
+
+guard = StaleGuard.from_providers(
+    use_nli=True,
+    embedding_provider=my_embedding_provider,
+    conflict_provider=my_conflict_provider,
+)
+
+result = guard.audit(
+    query="How do I configure Redis Cluster in Redis 8?",
+    retrieved=retriever_output,
+    corpus=corpus,
+)
+```
+
+### 3. Audit already-normalized chunks directly
+
+```python
+from src import StaleGuard
+
+guard = StaleGuard(use_nli=True)
+
+result = guard.audit_chunks(
     query="How do I configure Redis Cluster in Redis 8?",
     retrieved_chunks=[
         {
@@ -66,44 +121,21 @@ result = audit(
         }
     ],
     corpus=[...],
-    use_nli=True,
-)
-
-print(result.verdict)
-print(result.conflicts)
-print(result.fresh_alternatives)
-print(result.provenance)
-```
-
-### 2. Use the middleware-style entrypoint
-
-```python
-from src import StaleGuardConfig, audit_retrieved
-
-config = StaleGuardConfig(
-    use_nli=True,
-    block_on_conflict=False,
-    embedding_model="all-MiniLM-L6-v2",
-    conflict_model="cross-encoder/nli-deberta-v3-base",
-    similarity_threshold=0.40,
-    contradiction_threshold=0.80,
-    contradiction_margin=0.15,
-    cache_dir=".cache/huggingface",
-)
-
-result = audit_retrieved(
-    query="How do I configure Redis Cluster in Redis 8?",
-    retrieved=retriever_output,
-    corpus=corpus,
-    config=config,
 )
 ```
 
-`audit_retrieved(...)` auto-detects:
+`guard.audit(...)` auto-detects:
 
 - raw Chroma query results
 - LangChain-style documents with `page_content` and `metadata`
 - already-normalized chunk dicts
+
+The older functional entrypoints still exist:
+
+- `audit(...)`
+- `audit_retrieved(...)`
+- `audit_chroma_result(...)`
+- `audit_langchain_docs(...)`
 
 ## Verdicts
 
@@ -126,15 +158,15 @@ That collapses `MIXED` into `CONFLICTED`.
 This is the intended integration shape:
 
 ```python
-from src import audit_retrieved
+from src import StaleGuard
+
+guard = StaleGuard(use_nli=True, block_on_conflict=False)
 
 def audited_retrieve(query: str, retriever_output, corpus: list[dict]):
-    audit_result = audit_retrieved(
+    audit_result = guard.audit(
         query=query,
         retrieved=retriever_output,
         corpus=corpus,
-        use_nli=True,
-        block_on_conflict=False,
     )
 
     if audit_result.verdict == "CONFLICTED":
@@ -155,26 +187,28 @@ The application can then:
 ### Chroma
 
 ```python
-from src import audit_chroma_result
+from src import StaleGuard
 
-result = audit_chroma_result(
+guard = StaleGuard(use_nli=True)
+
+result = guard.audit(
     query=query,
-    chroma_result=chroma_result,
+    retrieved=chroma_result,
     corpus=corpus,
-    use_nli=True,
 )
 ```
 
 ### LangChain-style documents
 
 ```python
-from src import audit_langchain_docs
+from src import StaleGuard
 
-result = audit_langchain_docs(
+guard = StaleGuard(use_nli=True)
+
+result = guard.audit(
     query=query,
-    docs=docs,
+    retrieved=docs,
     corpus=corpus,
-    use_nli=True,
 )
 ```
 
