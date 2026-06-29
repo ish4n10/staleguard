@@ -1,3 +1,5 @@
+__version__ = "0.1.0"
+
 from .api import StaleGuard
 from .auditor import audit, audit_chroma_result, audit_langchain_docs, audit_retrieved
 from .config import StaleGuardConfig
@@ -26,6 +28,7 @@ __all__ = [
     "audit_chroma_result",
     "audit_langchain_docs",
     "audit_retrieved",
+    "__version__",
     "StaleGuard",
     "StaleGuardConfig",
     "AuditResult",

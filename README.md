@@ -23,6 +23,24 @@ LLM
 
 StaleGuard does not replace retrieval. It checks whether retrieved chunks are trustworthy enough to send to the model.
 
+## Install
+
+```bash
+pip install staleguard
+```
+
+For local embedding and NLI models:
+
+```bash
+pip install "staleguard[local]"
+```
+
+For the repo demos:
+
+```bash
+pip install "staleguard[demo]"
+```
+
 ## What It Does
 
 - score chunk freshness from metadata, version, and date signals
@@ -56,7 +74,7 @@ Use it when you want one stable entrypoint regardless of whether your retrieval 
 ### 1. Default local setup
 
 ```python
-from src import StaleGuard
+from staleguard import StaleGuard
 
 guard = StaleGuard(
     use_nli=True,
@@ -84,7 +102,7 @@ print(result.provenance)
 ### 2. Use custom or hosted providers behind the same API
 
 ```python
-from src import StaleGuard
+from staleguard import StaleGuard
 
 guard = StaleGuard.from_providers(
     use_nli=True,
@@ -102,7 +120,7 @@ result = guard.audit(
 ### 3. Audit already-normalized chunks directly
 
 ```python
-from src import StaleGuard
+from staleguard import StaleGuard
 
 guard = StaleGuard(use_nli=True)
 
@@ -158,7 +176,7 @@ That collapses `MIXED` into `CONFLICTED`.
 This is the intended integration shape:
 
 ```python
-from src import StaleGuard
+from staleguard import StaleGuard
 
 guard = StaleGuard(use_nli=True, block_on_conflict=False)
 
@@ -187,7 +205,7 @@ The application can then:
 ### Chroma
 
 ```python
-from src import StaleGuard
+from staleguard import StaleGuard
 
 guard = StaleGuard(use_nli=True)
 
@@ -201,7 +219,7 @@ result = guard.audit(
 ### LangChain-style documents
 
 ```python
-from src import StaleGuard
+from staleguard import StaleGuard
 
 guard = StaleGuard(use_nli=True)
 
@@ -217,6 +235,21 @@ The repo also exposes adapter helpers:
 - `normalize_chroma_result(...)`
 - `normalize_langchain_docs(...)`
 - `normalize_chunks(...)`
+
+## CLI
+
+```bash
+staleguard audit --query "How do I configure Redis Cluster in Redis 8?" --retrieved retrieved.json --corpus corpus.json
+staleguard eval --corpus eval_cases/kubernetes/corpus.json --cases eval_cases/kubernetes/cases.json --use-nli
+```
+
+## Publish
+
+```bash
+python -m pip install ".[dev]"
+python -m build
+python -m twine upload dist/*
+```
 
 ## Chunk Schema
 
@@ -256,7 +289,7 @@ If some metadata is missing, StaleGuard will:
 ### Redis demo
 
 ```bash
-python -m src.chroma_demo
+python -m staleguard.chroma_demo
 ```
 
 This builds a local Chroma collection and shows:
@@ -269,7 +302,7 @@ This builds a local Chroma collection and shows:
 ### Large engineering demo
 
 ```bash
-python -m src.engineering_demo
+python -m staleguard.engineering_demo
 ```
 
 This uses a larger corpus around:

@@ -18,7 +18,7 @@ def _load_chunks(path: str | None) -> list[dict] | None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="src")
+    parser = argparse.ArgumentParser(prog="staleguard")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     audit_parser = subparsers.add_parser("audit", help="Audit retrieved RAG chunks.")

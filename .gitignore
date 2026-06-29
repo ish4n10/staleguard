@@ -1,6 +1,9 @@
 .cache/
 venv
 demo_data/
+build/
+dist/
+*.egg-info/
 poc3_chroma
 __pycache__
 tests*

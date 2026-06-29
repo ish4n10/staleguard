@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "staleguard"
+version = "0.1.0"
+description = "Post-retrieval audit layer for RAG pipelines."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Ishan" }
+]
+keywords = ["rag", "retrieval", "llm", "audit", "staleness", "nli"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+  "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+local = [
+  "sentence-transformers>=3.0",
+]
+demo = [
+  "chromadb>=0.5",
+]
+dev = [
+  "build>=1.2",
+  "twine>=5.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/ish4n10/staleguard"
+Repository = "https://github.com/ish4n10/staleguard"
+Issues = "https://github.com/ish4n10/staleguard/issues"
+
+[project.scripts]
+staleguard = "staleguard.cli:main"
+
+[tool.setuptools]
+include-package-data = false
+packages = [
+  "staleguard",
+  "staleguard.adapters",
+  "staleguard.alternatives",
+  "staleguard.conflicts",
+  "staleguard.scorers",
+]
+
+[tool.setuptools.package-dir]
+staleguard = "src"
+"staleguard.adapters" = "src/adapters"
+"staleguard.alternatives" = "src/alternatives"
+"staleguard.conflicts" = "src/conflicts"
+"staleguard.scorers" = "src/scorers"

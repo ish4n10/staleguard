@@ -10,13 +10,15 @@ import chromadb
 if __package__:
     from . import audit_chroma_result
     from .adapters.chroma import normalize_chroma_result
-    from .conflicts.nli import get_embedder
+    from .config import StaleGuardConfig
+    from .providers import get_embedding_provider
     from .schema import prepare_chunks
 else:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from src import audit_chroma_result
     from src.adapters.chroma import normalize_chroma_result
-    from src.conflicts.nli import get_embedder
+    from src.config import StaleGuardConfig
+    from src.providers import get_embedding_provider
     from src.schema import prepare_chunks
 
 
@@ -24,6 +26,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CORPUS_PATH = REPO_ROOT / "examples" / "redis_demo" / "corpus_large.json"
 CHROMA_PATH = REPO_ROOT / ".cache" / "chroma" / "redis_demo"
 COLLECTION_NAME = "redis_docs"
+EMBED_CONFIG = StaleGuardConfig()
 
 
 def load_corpus(path: Path = CORPUS_PATH) -> list[dict[str, Any]]:
@@ -40,6 +43,15 @@ def chroma_metadata(chunk: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in metadata.items() if value is not None}
 
 
+def encode_texts(values: str | list[str]) -> list[float] | list[list[float]]:
+    provider = get_embedding_provider(EMBED_CONFIG)
+    if not hasattr(provider, "_get_embedder"):
+        raise RuntimeError("The demo requires a local embedding provider.")
+
+    embedder = provider._get_embedder()
+    return embedder.encode(values, normalize_embeddings=True).tolist()
+
+
 def rebuild_collection(
     corpus: list[dict[str, Any]],
     persist_path: Path = CHROMA_PATH,
@@ -49,12 +61,11 @@ def rebuild_collection(
         shutil.rmtree(persist_path)
     persist_path.mkdir(parents=True, exist_ok=True)
 
-    embedder = get_embedder()
     client = chromadb.PersistentClient(path=str(persist_path))
     collection = client.create_collection(name=collection_name)
 
     documents = [chunk["text"] for chunk in corpus]
-    embeddings = embedder.encode(documents, normalize_embeddings=True).tolist()
+    embeddings = encode_texts(documents)
     metadatas = [chroma_metadata(chunk) for chunk in corpus]
     ids = [chunk["id"] for chunk in corpus]
 
@@ -73,8 +84,7 @@ def query_collection(
     query: str,
     n_results: int = 4,
 ) -> dict[str, Any]:
-    embedder = get_embedder()
-    query_embedding = embedder.encode(query, normalize_embeddings=True).tolist()
+    query_embedding = encode_texts(query)
     return collection.query(
         query_embeddings=[query_embedding],
         n_results=n_results,
